@@ -32,11 +32,11 @@ class Settings:
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Database
-    DB_HOST: str = os.getenv("DB_HOST", "localhost")
-    DB_PORT: str = os.getenv("DB_PORT", "3306")  # MySQL default port
-    DB_NAME: str = os.getenv("DB_NAME", "ocr_database")
-    DB_USER: str = os.getenv("DB_USER", "admin")
-    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "admin123@")
+    DB_HOST: str = os.getenv("DB_HOST")
+    DB_PORT: str = os.getenv("DB_PORT" , "6789")  
+    DB_NAME: str = os.getenv("DB_NAME")
+    DB_USER: str = os.getenv("DB_USER")
+    DB_PASSWORD: str = os.getenv("DB_PASSWORD")
 
     # CORS
     CORS_ORIGINS: list = [

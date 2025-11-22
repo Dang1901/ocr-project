@@ -117,6 +117,53 @@ class UserService:
         except Exception as e:
             logging.error(f"Error updating user password: {e}")
             raise
+    
+    def toggle_user_status(self, user_id: str, is_active: bool) -> bool:
+        """Toggle user active/inactive status"""
+        try:
+            user = self.get_user_by_id(user_id)
+            if not user:
+                raise ValueError("User not found")
+            
+            # Convert boolean to string format used in database ("1" = active, "0" = inactive)
+            user.is_active = "1" if is_active else "0"
+            user.status = "ACTIVE" if is_active else "INACTIVE"
+            user.updated_at = datetime.now()
+            
+            return self.__user.update_user(user)
+        except Exception as e:
+            logging.error(f"Error toggling user status for user {user_id}: {e}")
+            raise
+    
+    def reset_user_password(self, user_id: str) -> str:
+        """Reset user password and return the new generated password"""
+        import secrets
+        import string
+        
+        try:
+            user = self.get_user_by_id(user_id)
+            if not user:
+                raise ValueError("User not found")
+            
+            # Generate a random password (12 characters: letters + digits)
+            alphabet = string.ascii_letters + string.digits
+            new_password = ''.join(secrets.choice(alphabet) for i in range(12))
+            
+            # Hash the new password
+            hashed_password = get_password_hash(new_password)
+            
+            # Update user password
+            user.password = hashed_password
+            user.updated_at = datetime.now()
+            
+            success = self.__user.update_user(user)
+            if not success:
+                raise ValueError("Failed to reset password")
+            
+            return new_password
+        except Exception as e:
+            logging.error(f"Error resetting password for user {user_id}: {e}")
+            raise
 
     # USER-ROLE MANAGEMENT
     def assign_roles_to_user(self, user_id: str, role_ids: list) -> bool:
@@ -303,5 +350,52 @@ class UserService:
             return self.__user.update_user(user)
         except Exception as e:
             logging.error(f"Error updating user password: {e}")
+            raise
+    
+    def toggle_user_status(self, user_id: str, is_active: bool) -> bool:
+        """Toggle user active/inactive status"""
+        try:
+            user = self.get_user_by_id(user_id)
+            if not user:
+                raise ValueError("User not found")
+            
+            # Convert boolean to string format used in database ("1" = active, "0" = inactive)
+            user.is_active = "1" if is_active else "0"
+            user.status = "ACTIVE" if is_active else "INACTIVE"
+            user.updated_at = datetime.now()
+            
+            return self.__user.update_user(user)
+        except Exception as e:
+            logging.error(f"Error toggling user status for user {user_id}: {e}")
+            raise
+    
+    def reset_user_password(self, user_id: str) -> str:
+        """Reset user password and return the new generated password"""
+        import secrets
+        import string
+        
+        try:
+            user = self.get_user_by_id(user_id)
+            if not user:
+                raise ValueError("User not found")
+            
+            # Generate a random password (12 characters: letters + digits)
+            alphabet = string.ascii_letters + string.digits
+            new_password = ''.join(secrets.choice(alphabet) for i in range(12))
+            
+            # Hash the new password
+            hashed_password = get_password_hash(new_password)
+            
+            # Update user password
+            user.password = hashed_password
+            user.updated_at = datetime.now()
+            
+            success = self.__user.update_user(user)
+            if not success:
+                raise ValueError("Failed to reset password")
+            
+            return new_password
+        except Exception as e:
+            logging.error(f"Error resetting password for user {user_id}: {e}")
             raise
 

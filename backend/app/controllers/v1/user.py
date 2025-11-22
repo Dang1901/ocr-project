@@ -5,7 +5,7 @@ from app.services.session_service import SessionService
 from app.authentication.dependencies import require_token
 # from authorization.dependencies import check_permission  # Tạm comment
 from typing import Optional, List
-from app.schemas.user import UserRoleAssignment, UserRoleRemoval
+from app.schemas.user import UserRoleAssignment, UserRoleRemoval, CreateUserRequest, ToggleUserStatusRequest, ResetPasswordResponse
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.role import Role
@@ -127,4 +127,69 @@ def update_user_roles(
     enforcer.save_policy()
 
     return {"status": "success", "message": "User roles updated successfully"}
+
+@router.post("/users", name="create_user")
+def create_user(
+    user_data: CreateUserRequest,
+    user_service: UserService = Depends(get_user_service),
+):
+    """Create a new user (Admin only)"""
+    try:
+        user = user_service.create_user(
+            username=user_data.username,
+            email=user_data.email,
+            password=user_data.password,
+            first_name=user_data.first_name,
+            last_name=user_data.last_name
+        )
+        user_info = user_service.get_user_info_by_id(user.id)
+        return {
+            "status": "success",
+            "message": "User created successfully",
+            "data": user_info
+        }
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to create user: {str(e)}"}
+
+@router.put("/users/{user_id}/toggle-status", name="toggle_user_status")
+def toggle_user_status(
+    user_id: str,
+    status_data: ToggleUserStatusRequest,
+    user_service: UserService = Depends(get_user_service),
+):
+    """Toggle user active/inactive status (Admin only)"""
+    try:
+        success = user_service.toggle_user_status(user_id, status_data.is_active)
+        if not success:
+            return {"status": "error", "message": "Failed to update user status"}
+        
+        status_text = "activated" if status_data.is_active else "deactivated"
+        return {
+            "status": "success",
+            "message": f"User {status_text} successfully"
+        }
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to update user status: {str(e)}"}
+
+@router.put("/users/{user_id}/reset-password", name="reset_user_password")
+def reset_user_password(
+    user_id: str,
+    user_service: UserService = Depends(get_user_service),
+):
+    """Reset user password and return new password (Admin only)"""
+    try:
+        new_password = user_service.reset_user_password(user_id)
+        return {
+            "status": "success",
+            "message": "Password reset successfully",
+            "data": ResetPasswordResponse(new_password=new_password)
+        }
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to reset password: {str(e)}"}
 

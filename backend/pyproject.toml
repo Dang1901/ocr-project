@@ -30,7 +30,8 @@ dependencies = [
     "python-gitlab",
     "email-validator>=2.0.0",
     "fastapi-mail==1.4.1",
-    "pydantic-settings>=2.0.0"
+    "pydantic-settings>=2.0.0",
+    "PyMySQL==1.1.0",
 ]
 
 [tool.hatch.build.targets.wheel]

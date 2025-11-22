@@ -1,85 +1,46 @@
-import type { UserType, RoleType } from "@types/types";
 import type { ColumnsType } from "antd/es/table";
 import { Button, Dropdown } from "antd";
-import { IconDotsVertical, IconUserPlus, IconEdit, IconTrash } from "@tabler/icons-react";
+import { IconDotsVertical, IconLock, IconToggleLeft, IconToggleRight } from "@tabler/icons-react";
 import type { MenuProps } from "antd";
+import StatusBadge from "@/components/common/StatusBadge";
 import RoleTags from "./components/RoleTags";
+import type { RoleType, UserType } from "@/types/types";
 
 interface UserColumnProps {
-  handleAssignRoles?: (userId: string) => void;
-  handleRemoveRoles?: (userId: string) => void;
-  handleUpdateRoles?: (userId: string) => void;
-  handleEdit?: (userId: string) => void;
-  handleDelete?: (payload: { id: string; name: string }) => void;
+  handleToggleStatus?: (userId: string, isActive: boolean) => void;
+  handleResetPassword?: (userId: string) => void;
 }
 
 export const buildUserColumns = ({
-  handleAssignRoles,
-  handleRemoveRoles,
-  handleUpdateRoles,
-  handleEdit,
-  handleDelete,
+  handleToggleStatus,
+  handleResetPassword,
 }: UserColumnProps): ColumnsType<UserType> => {
   const getActionMenu = (record: UserType): MenuProps => {
     const menuItems = [];
-    
-    if (handleAssignRoles) {
+
+    if (handleToggleStatus) {
+      const isActive = record.status === "ACTIVE" || record.status === "active";
       menuItems.push({
-        key: "assign-roles",
+        key: "toggle-status",
         label: (
           <span style={{ display: "flex", alignItems: "center", gap: 8, color: "#1A3636", fontWeight: 500 }}>
-            <IconUserPlus size={16} /> Assign Roles
+            {isActive ? <IconToggleLeft size={16} /> : <IconToggleRight size={16} />}
+            {isActive ? "Deactivate User" : "Activate User"}
           </span>
         ),
-        onClick: () => handleAssignRoles(record.id),
-      });
-    }
-    
-    if (handleUpdateRoles) {
-      menuItems.push({
-        key: "update-roles",
-        label: (
-          <span style={{ display: "flex", alignItems: "center", gap: 8, color: "#1A3636", fontWeight: 500 }}>
-            <IconEdit size={16} /> Update Roles
-          </span>
-        ),
-        onClick: () => handleUpdateRoles(record.id),
-      });
-    }
-    
-    if (handleRemoveRoles) {
-      menuItems.push({
-        key: "remove-roles",
-        label: (
-          <span style={{ display: "flex", alignItems: "center", gap: 8, color: "#ff4d4f", fontWeight: 500 }}>
-            <IconTrash size={16} /> Remove Roles
-          </span>
-        ),
-        onClick: () => handleRemoveRoles(record.id),
+        onClick: () => handleToggleStatus(record.id, !isActive),
       });
     }
 
-    if (handleEdit) {
+    if (handleResetPassword) {
       menuItems.push({
-        key: "edit",
+        key: "reset-password",
         label: (
           <span style={{ display: "flex", alignItems: "center", gap: 8, color: "#1A3636", fontWeight: 500 }}>
-            <IconEdit size={16} /> Edit User
+            <IconLock size={16} /> Reset Password
           </span>
         ),
-        onClick: () => handleEdit(record.id),
-      });
-    }
-
-    if (handleDelete) {
-      menuItems.push({
-        key: "delete",
-        label: (
-          <span style={{ display: "flex", alignItems: "center", gap: 8, color: "#ff4d4f", fontWeight: 500 }}>
-            <IconTrash size={16} /> Delete User
-          </span>
-        ),
-        onClick: () => handleDelete({ id: record.id, name: `${record.first_name} ${record.last_name}` }),
+        onClick: () => handleResetPassword(record.id),
       });
     }
     
@@ -117,6 +78,16 @@ export const buildUserColumns = ({
       render: (roles: RoleType[]) => {
         return <RoleTags roles={roles || []} maxDisplay={2} />;
       }
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      width: 120,
+      align: "center" as const,
+      render: (status: string) => <StatusBadge status={status} />,
+      sorter: (a: UserType, b: UserType) => 
+        (a.status || '').localeCompare(b.status || ''),
     },
     {
       title: "Created At",
