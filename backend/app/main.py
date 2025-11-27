@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from starlette.middleware.sessions import SessionMiddleware
 
+from app.db.session import engine
 from app.core.config import settings
 from app.api.v1.router import api_router
 from app.services.user_service import UserService
@@ -16,16 +17,32 @@ from app.repository.otp.otp_interface import OTPInterface
 from app.repository.otp.otp_implement import OTPImplement
 
 # Import controllers
-from app.controllers.v1 import user, current_user
-from app.authorization.controller import role_controller, permission_controller, feature_controller
+from app.authorization.controller import (
+    role_controller,
+    permission_controller,
+    department_controller,
+    user_controller,
+    document_permission_controller,
+)
+from app.controllers.v1 import (
+    document_controller, 
+    activity_log
+    )
+
+from app.middleware.activity_log import ActivityLogMiddleware
+from app.repository.activity_log.activity_log_interface import ActivityLogInterface
+from app.repository.activity_log.activity_log_implement import ActivityLogImplement
+from app.authorization.controller.current_user_controller import router as current_user_router
+from app.authorization.casbin_enforcer import get_enforcer
+from app.authorization.create_operations import sync_feature_operations
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Chạy khi server khởi động
     print("🚀 Starting OCR Project API...")
-    
-    print("✅ Application started successfully!")
+    app.state.enforcer = get_enforcer()
+    setup_entities()
     
     yield  # Ứng dụng chạy ở đây (nhận requests)
     
@@ -43,7 +60,12 @@ def configure_injector(binder):
     binder.bind(UserInterface, UserImplement())
     binder.bind(SessionInterface, SessionImplement())
     binder.bind(OTPInterface, OTPImplement())  
+    binder.bind(ActivityLogInterface, ActivityLogImplement())
 
+
+def setup_entities():
+    from app.models.activity_log import ActivityLog
+    ActivityLog.__table__.create(bind=engine, checkfirst=True)
 
 if not inject.is_configured():
     inject.configure(configure_injector)
@@ -70,14 +92,26 @@ app.add_middleware(
 )
 
 app.add_middleware(SessionMiddleware, secret_key="secret")
+app.add_middleware(ActivityLogMiddleware)
 
 # Include routers
 app.include_router(api_router, prefix="/api/v1")
-app.include_router(user.router, prefix="/api/v1", tags=["USER"])
+app.include_router(user_controller.router, prefix="/api/v1", tags=["USER"])
 app.include_router(role_controller.router, prefix="/api/v1", tags=["ROLE"])
 app.include_router(permission_controller.router, prefix="/api/v1", tags=["PERMISSION"])
-app.include_router(feature_controller.router, prefix="/api/v1", tags=["FEATURE"])
-app.include_router(current_user.router, prefix="/api/v1", tags=["CHECK_PERMISSION"])
+app.include_router(department_controller.router, prefix="/api/v1", tags=["DEPARTMENT"])
+app.include_router(document_controller.router, prefix="/api/v1", tags=["DOCUMENT"])
+app.include_router(document_permission_controller.router, prefix="/api/v1", tags=["DOCUMENT_PERMISSION"])
+app.include_router(current_user_router, prefix="/api/v1", tags=["CURRENT_USER"])
+app.include_router(activity_log.router, prefix="/api/v1", tags=["ACTIVITY_LOG"])
+
+# Sync feature operations từ API routes (sau khi tất cả routers đã được include)
+print("🔄 Syncing feature operations...")
+try:
+    count = sync_feature_operations(app)
+    print(f"✅ Synced {count} feature operations")
+except Exception as e:
+    print(f"⚠️  Warning: Failed to sync feature operations: {e}")
 
 
 @app.get("/", tags=["root"])

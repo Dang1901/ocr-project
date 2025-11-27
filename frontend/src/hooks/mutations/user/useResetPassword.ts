@@ -5,7 +5,7 @@ import { addToast, createToast } from '@/store/slices/toast_slice';
 
 interface UseResetPasswordOptions {
   showToast?: boolean;
-  onSuccess?: (newPassword: string) => void;
+  onSuccess?: () => void;
   onError?: (error: any) => void;
 }
 
@@ -22,21 +22,19 @@ export const useResetPassword = (options?: UseResetPasswordOptions) => {
       if (data?.success) {
         queryClient.invalidateQueries({ queryKey: ['users'] });
         
-        const newPassword = data.data?.data?.new_password || '';
-        
         if (showToast) {
           dispatch(
             addToast(
               createToast.success(
                 'Password reset successfully',
-                `New password: ${newPassword}`,
-                10000 // Show longer to allow user to copy password
+                data?.data?.message || 'The new password has been sent to the user\'s email.',
+                5000
               )
             )
           );
         }
         
-        options?.onSuccess?.(newPassword);
+        options?.onSuccess?.();
       } else {
         if (showToast) {
           dispatch(

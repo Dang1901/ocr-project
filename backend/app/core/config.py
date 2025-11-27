@@ -59,6 +59,10 @@ class Settings:
     MAIL_STARTTLS: bool = os.getenv("MAIL_STARTTLS", "true").lower() == "true"
     MAIL_SSL_TLS: bool = os.getenv("MAIL_SSL_TLS", "false").lower() == "true"
 
+    # File Upload
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "uploads")
+    MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", "10485760"))  # 10MB default
+
     class Config:
         env_file = ".env"
 

@@ -13,6 +13,7 @@ import {
   BarChartOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { colors } from '@config/colors';
 
 const { Title, Text } = Typography;
 
@@ -97,7 +98,7 @@ const Dashboard: React.FC = () => {
       width: 200,
       render: (text: string) => (
         <Space>
-          <ScanOutlined style={{ color: '#1A3636' }} />
+          <ScanOutlined style={{ color: colors.textPrimary }} />
           <Text strong style={{ fontSize: '13px' }}>{text}</Text>
         </Space>
       ),
@@ -137,7 +138,7 @@ const Dashboard: React.FC = () => {
               <Progress
                 percent={accuracy}
                 size="small"
-                strokeColor="#1A3636"
+                strokeColor={colors.textPrimary}
                 showInfo={false}
                 style={{ width: '80px', display: 'inline-block' }}
               />
@@ -179,18 +180,18 @@ const Dashboard: React.FC = () => {
               <Progress
                 percent={record.progress}
                 size="small"
-                strokeColor="#1A3636"
+                strokeColor={colors.textPrimary}
                 showInfo={false}
                 style={{ width: '100px' }}
               />
-              <Text strong style={{ fontSize: '13px', color: '#1A3636', minWidth: '40px' }}>
+              <Text strong style={{ fontSize: '13px', color: colors.textPrimary, minWidth: '40px' }}>
                 {value}
               </Text>
             </div>
           );
         }
         return (
-          <Text strong style={{ fontSize: '13px', color: record.color || '#1A3636' }}>
+          <Text strong style={{ fontSize: '13px', color: record.color || colors.textPrimary }}>
             {value}
           </Text>
         );
@@ -204,25 +205,25 @@ const Dashboard: React.FC = () => {
       metric: 'Average Processing Time',
       value: `${ocrStats.avgProcessingTime}s`,
       progress: 75,
-      color: '#1A3636',
+      color: colors.textPrimary,
     },
     {
       key: '2',
       metric: 'Images Processed Today',
       value: '87',
-      color: '#000000',
+      color: colors.textBlack,
     },
     {
       key: '3',
       metric: 'Success Rate',
       value: `${((ocrStats.successful / ocrStats.totalProcessed) * 100).toFixed(1)}%`,
-      color: '#1A3636',
+      color: colors.textPrimary,
     },
     {
       key: '4',
       metric: 'Failed Processing',
       value: `${ocrStats.failed}`,
-      color: '#000000',
+      color: colors.textBlack,
     },
   ];
 
@@ -247,21 +248,21 @@ const Dashboard: React.FC = () => {
               <Progress
                 percent={record.progress}
                 size="small"
-                strokeColor="#1A3636"
+                strokeColor={colors.textPrimary}
                 showInfo={false}
                 style={{ width: '100px' }}
               />
-              <Text strong style={{ fontSize: '13px', color: '#1A3636', minWidth: '60px' }}>
+              <Text strong style={{ fontSize: '13px', color: colors.textPrimary, minWidth: '60px' }}>
                 {status}
               </Text>
             </div>
           );
         }
         if (typeof status === 'string' && status.includes('Online')) {
-          return <Tag color="#1A3636">{status}</Tag>;
+          return <Tag color={colors.textPrimary}>{status}</Tag>;
         }
         return (
-          <Text strong style={{ fontSize: '13px', color: '#000000' }}>
+          <Text strong style={{ fontSize: '13px', color: colors.textBlack }}>
             {status}
           </Text>
         );
@@ -297,7 +298,7 @@ const Dashboard: React.FC = () => {
     <div style={{ padding: '24px', background: '#f8f9fa', minHeight: '100vh' }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <div>
-          <Title level={2} style={{ margin: 0, color: '#1A3636' }}>
+          <Title level={2} style={{ margin: 0, color: colors.textPrimary }}>
             OCR Dashboard
           </Title>
           <Text type="secondary">
@@ -312,7 +313,7 @@ const Dashboard: React.FC = () => {
                 title="Total Processed"
                 value={ocrStats.totalProcessed}
                 prefix={<FileImageOutlined />}
-                valueStyle={{ color: '#1A3636' }}
+                valueStyle={{ color: colors.textPrimary }}
               />
               <Text type="secondary" style={{ fontSize: '12px' }}>
                 +156 this week
@@ -325,7 +326,7 @@ const Dashboard: React.FC = () => {
                 title="Successful"
                 value={ocrStats.successful}
                 prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: '#1A3636' }}
+                valueStyle={{ color: colors.textPrimary }}
               />
               <Text type="secondary" style={{ fontSize: '12px' }}>
                 {((ocrStats.successful / ocrStats.totalProcessed) * 100).toFixed(1)}% success rate
@@ -338,7 +339,7 @@ const Dashboard: React.FC = () => {
                 title="Pending"
                 value={ocrStats.pending}
                 prefix={<ClockCircleOutlined />}
-                valueStyle={{ color: '#000000' }}
+                valueStyle={{ color: colors.textBlack }}
               />
               <Text type="secondary" style={{ fontSize: '12px' }}>
                 In processing queue
@@ -352,7 +353,7 @@ const Dashboard: React.FC = () => {
                 value={ocrStats.accuracy}
                 prefix={<BarChartOutlined />}
                 suffix="%"
-                valueStyle={{ color: '#1A3636' }}
+                valueStyle={{ color: colors.textPrimary }}
               />
               <Text type="secondary" style={{ fontSize: '12px' }}>
                 Average recognition accuracy
@@ -372,7 +373,7 @@ const Dashboard: React.FC = () => {
                   icon={<UploadOutlined />}
                   size="large"
                   onClick={() => navigate('/ocr')}
-                  style={{ background: '#1A3636', borderColor: '#1A3636' }}
+                  style={{ background: colors.textPrimary, borderColor: colors.textPrimary }}
                 >
                   Upload New Image
                 </Button>

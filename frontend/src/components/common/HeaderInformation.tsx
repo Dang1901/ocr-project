@@ -1,7 +1,7 @@
-import React from 'react';
 import { Card, Row, Col, Breadcrumb, Typography, Tabs } from 'antd';
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { colors } from '@config/colors';
 
 const { Title, Text } = Typography;
 
@@ -36,7 +36,7 @@ export default function HeaderInformation({
   const items = (tabs ?? []).map(t => ({ key: t.key, label: t.label }));
 
   return (
-    <Card>
+    <Card style={{ borderRadius: 0 }}>
       <Row align="middle" justify="space-between" gutter={[16, 16]}>
         <Col flex="auto" style={{ minWidth: 0 }}>
           {/* Breadcrumbs */}
@@ -49,7 +49,7 @@ export default function HeaderInformation({
                     {bc.label}
                   </Link>
                 ) : (
-                  <span style={{ color: '#1A3636', fontWeight: 600 }}>
+                  <span style={{ color: colors.textPrimary, fontWeight: 600 }}>
                     {bc.label}
                   </span>
                 ),
@@ -59,7 +59,7 @@ export default function HeaderInformation({
           ) : (
             breadcrumb && (
               <div style={{ marginBottom: 8 }}>
-                <Text strong style={{ color: '#1A3636' }}>
+                <Text strong style={{ color: colors.textPrimary }}>
                   {breadcrumb}
                 </Text>
               </div>
@@ -69,7 +69,7 @@ export default function HeaderInformation({
           {/* Title + Icon */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {icon}
-            <Title level={4} style={{ margin: 0, color: '#1A3636', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <Title level={4} style={{ margin: 0, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {title}
             </Title>
           </div>
@@ -94,7 +94,7 @@ export default function HeaderInformation({
 
       {/* Tabs */}
       {tabs && tabs.length > 0 && (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 12, marginBottom: -25 }}>
           <Tabs
             activeKey={activeTabKey}
             items={items}

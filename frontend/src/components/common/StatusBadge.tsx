@@ -1,5 +1,4 @@
 import React from 'react';
-import { Badge } from 'antd';
 import styled, { keyframes } from 'styled-components';
 
 const pulse = keyframes`
@@ -11,33 +10,34 @@ const pulse = keyframes`
   }
 `;
 
-const PulsingBadge = styled(Badge)`
-  .ant-badge-status-dot {
-    width: 12px;
-    height: 12px;
-    animation: ${pulse} 1.5s ease-in-out infinite;
-  }
+const StatusDot = styled.div<{ $color: string }>`
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: ${props => props.$color};
+  animation: ${pulse} 1.5s ease-in-out infinite;
+  display: inline-block;
 `;
 
 interface StatusBadgeProps {
   status: string;
 }
 
-const getStatusBadge = (status: string): "success" | "error" | "processing" | "warning" | "default" => {
+const getStatusColor = (status: string): string => {
   const statusUpper = (status || '').toUpperCase();
   if (statusUpper === 'ACTIVE') {
-    return 'success';
+    return '#52c41a'; // success green
   } else if (statusUpper === 'INACTIVE') {
-    return 'error';
+    return '#ff4d4f'; // error red
   }
-  return 'processing';
+  return '#1890ff'; // processing blue
 };
 
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const badgeStatus = getStatusBadge(status);
+  const color = getStatusColor(status);
   
   return (
-    <PulsingBadge status={badgeStatus} />
+    <StatusDot $color={color} />
   );
 };
 

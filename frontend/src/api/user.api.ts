@@ -23,6 +23,11 @@ export interface UserRoleAssignment {
   role_ids: string[];
 }
 
+export interface UserRoleRemoval {
+  user_id: string;
+  role_ids: string[];
+}
+
 export interface CreateUserRequest {
   username: string;
   email: string;
@@ -35,9 +40,6 @@ export interface ToggleUserStatusRequest {
   is_active: boolean;
 }
 
-export interface ResetPasswordResponse {
-  new_password: string;
-}
 
 export const userApi = {
   
@@ -65,8 +67,28 @@ export const userApi = {
   },
 
   // Reset user password
-  resetPassword: async (userId: string): Promise<APIResponse<{ data: ResetPasswordResponse; status: string; message: string }>> => {
+  resetPassword: async (userId: string): Promise<APIResponse<{ status: string; message: string; data: null }>> => {
     return httpClient.put(`/users/${userId}/reset-password`);
+  },
+
+  // Get user roles
+  getUserRoles: async (userId: string): Promise<APIResponse<{ roles: Array<{ id: string; name: string; code: string }> }>> => {
+    return httpClient.get(`/users/${userId}/roles`);
+  },
+
+  // Assign roles to user
+  assignRoles: async (assignment: UserRoleAssignment): Promise<APIResponse<{ status: string; message: string }>> => {
+    return httpClient.post('/users/assign-roles', assignment);
+  },
+
+  // Remove roles from user
+  removeRoles: async (removal: UserRoleRemoval): Promise<APIResponse<{ status: string; message: string }>> => {
+    return httpClient.delete('/users/remove-roles', { data: removal });
+  },
+
+  // Update user roles (replace all)
+  updateRoles: async (userId: string, roleIds: string[]): Promise<APIResponse<{ status: string; message: string }>> => {
+    return httpClient.put(`/users/${userId}/roles`, roleIds);
   },
 };
 

@@ -15,37 +15,48 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   
   useEffect(() => {
     const checkAuth = async () => {
-      if (!authMode) {
-        setIsAuthenticated(true);
-        setLoading(false);
-        return;
-      }
+      try {
+        if (!authMode) {
+          setIsAuthenticated(true);
+          setLoading(false);
+          return;
+        }
 
-      // Skip validateToken call - assume authenticated if auth mode is on
-      // Uncomment below if you want to validate token on route change
-      // try {
-      //   const result = await validateToken();
-      //   if (result?.data?.detail === "TOKEN_VALID") {
-      //     setIsAuthenticated(true);
-      //   } else {
-      //     setIsAuthenticated(false);
-      //   }
-      // } catch (error) {
-      //   setIsAuthenticated(false);
-      // } finally {
-      //   setLoading(false);
-      // }
-      
-      // For now, skip validation and assume authenticated
-      setIsAuthenticated(true);
-      setLoading(false);
+        // Validate token on route change
+        try {
+          const result = await validateToken();
+          if (result?.data?.detail === "TOKEN_VALID") {
+            setIsAuthenticated(true);
+          } else {
+            setIsAuthenticated(false);
+          }
+        } catch (error) {
+          setIsAuthenticated(false);
+        } finally {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setIsAuthenticated(false);
+        setLoading(false);
+      }
     };
 
     checkAuth();
   }, [authMode]);
   
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '16px'
+      }}>
+        Loading...
+      </div>
+    );
   }
   
   if (!isAuthenticated && authMode) {

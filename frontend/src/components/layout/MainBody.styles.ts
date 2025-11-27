@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { colors } from "@config/colors";
 
 const BodyContainer = styled.div`
   display: flex;
@@ -11,7 +12,7 @@ const ContentContainer = styled.div`
   width: 100%;
   transition: width 0.3s ease;
   overflow: auto;
-  background-color: #f8f9fa;
+  background-color: ${colors.background};
 `;
 
 export { BodyContainer, ContentContainer };

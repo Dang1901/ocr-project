@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, String, DateTime
+from sqlalchemy import Column, String, DateTime, UniqueConstraint
 from app.db.base import Base
 
 
@@ -11,12 +11,17 @@ class Permission(Base):
     role_code = Column(String(128), nullable=False)
     feature_id = Column(String(36), nullable=False)
     feature_code = Column(String(128), nullable=False)
-    operation = Column(String(64), nullable=False, unique=True)
+    operation = Column(String(64), nullable=False)  # Bỏ unique=True - nhiều roles có thể có cùng operation
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(
         DateTime,
         default=datetime.datetime.now,
         onupdate=datetime.datetime.now,
+    )
+    
+    # Composite unique constraint: mỗi role chỉ có một permission cho mỗi (feature_code, operation)
+    __table_args__ = (
+        UniqueConstraint('role_id', 'feature_code', 'operation', name='uq_permission_role_feature_operation'),
     )
 
     def __init__(self, data: dict):

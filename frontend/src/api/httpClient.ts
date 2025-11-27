@@ -26,8 +26,11 @@ class HttpClient {
       (config) => {
         config.headers = config.headers || {};
 
-        if (!config.headers['Content-Type']) {
-          config.headers['Content-Type'] = 'application/json';
+        // Don't set Content-Type for FormData, let browser set it with boundary
+        if (!(config.data instanceof FormData)) {
+          if (!config.headers['Content-Type']) {
+            config.headers['Content-Type'] = 'application/json';
+          }
         }
         config.headers['Accept'] = 'application/json';
 

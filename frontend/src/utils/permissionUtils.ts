@@ -16,17 +16,20 @@ export function checkPermissionFromError(error: any, fallbackMessage = "You don'
     return { hasPermission: true, isPermissionDenied: false };
   }
 
+  // Check error từ React Query (có thể là APIResponse với error field)
+  const errorMessage = error?.error || error?.message;
+  const errorStatus = error?.response?.status || error?.status;
+  
   const isPermissionDenied = 
-    error?.message?.includes("Access denied") || 
-    error?.message?.includes("Permission denied") ||
-    error?.message?.includes("do not have permission") ||
-    error?.response?.status === 403 ||
-    error?.status === 403;
+    errorMessage?.includes("Access denied") || 
+    errorMessage?.includes("Permission denied") ||
+    errorMessage?.includes("do not have permission") ||
+    errorStatus === 403;
 
   return {
     hasPermission: !isPermissionDenied,
     isPermissionDenied,
-    errorMessage: error?.message || fallbackMessage
+    errorMessage: errorMessage || fallbackMessage
   };
 }
 

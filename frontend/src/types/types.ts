@@ -2,8 +2,10 @@ export interface UserType {
   id: string;
   username: string;
   email: string;
-  first_name: string;
-  last_name: string;
+  fullname?: string;
+  department_id?: string;
+  first_name?: string;
+  last_name?: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -11,15 +13,22 @@ export interface UserType {
   total?: number;
 }
 
-export interface RoleType {
+export interface DepartmentType {
   id: string;
   name: string;
+}
+
+export interface RoleType {
+  id: string;
+  name?: string;
   code: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  description?: string;
-  user_count?: number;
+  level?: string;
+  level_int?: number;
+  department_id?: string;
+  department?: DepartmentType | null;
+  is_active?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface OrgType {

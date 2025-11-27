@@ -1,31 +1,44 @@
 from typing import Optional
-import uuid
 from datetime import datetime
+import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.feature import Feature
-from app.authentication.dependencies import require_token
-from app.authorization.dependencies import check_permission
-from app.schemas.feature import FeatureBase, Feature as FeatureSchema, PaginatedFeatureResponse
+from app.authentication.dependencies import require_session
+from app.authorization.utils import check_casbin_permission
+from app.schemas.feature import (
+    Feature as FeatureSchema,
+    FeatureCreate,
+    FeatureUpdate,
+    PaginatedFeatureResponse,
+)
 
-
-router = APIRouter(dependencies=[Depends(require_token), Depends(check_permission)])
+router = APIRouter(dependencies=[Depends(require_session)])
 
 
 @router.get("/features", response_model=PaginatedFeatureResponse, name="list_features")
 def list_features(
-    q: Optional[str] = Query(None, description="Search by feature name or code"),
+    request: Request,
+    q: Optional[str] = Query(None, description="Search by feature name, code or url"),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
+    # Check permission
+    check_casbin_permission(request, "FEATURE", "list_features")
     query = db.query(Feature)
     if q:
         like = f"%{q}%"
-        query = query.filter((Feature.name.ilike(like)) | (Feature.code.ilike(like)))
+        filters = [
+            Feature.name.ilike(like),
+            Feature.url.ilike(like),
+            Feature.code.ilike(like),  # Search by code as string
+        ]
+        query = query.filter(or_(*filters))
 
     total = query.count()
     items = (
@@ -44,66 +57,17 @@ def list_features(
 
 
 @router.get("/features/{feature_id}", response_model=FeatureSchema, name="get_feature")
-def get_feature(feature_id: str, db: Session = Depends(get_db)):
+def get_feature(
+    feature_id: str,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    # Check permission
+    check_casbin_permission(request, "FEATURE", "get_feature")
     feature = db.query(Feature).filter(Feature.id == feature_id).first()
     if not feature:
         raise HTTPException(status_code=404, detail="Feature not found")
     return feature
 
 
-@router.post("/features", response_model=FeatureSchema, name="create_feature")
-def create_feature(payload: FeatureBase, db: Session = Depends(get_db)):
-    if not payload.name or not payload.code:
-        raise HTTPException(status_code=400, detail="Missing 'name' or 'code'")
-
-    # Check duplicate by code
-    existed = db.query(Feature).filter(Feature.code == payload.code).first()
-    if existed:
-        raise HTTPException(status_code=400, detail="Feature code already exists")
-
-    now = datetime.now()
-    data = {
-        "id": str(uuid.uuid4()),
-        "name": payload.name,
-        "code": payload.code,
-        "created_at": now,
-        "updated_at": now,
-    }
-    feature = Feature(data)
-    db.add(feature)
-    db.commit()
-    db.refresh(feature)
-    return feature
-
-
-@router.put("/features/{feature_id}", response_model=FeatureSchema, name="update_feature")
-def update_feature(feature_id: str, payload: FeatureBase, db: Session = Depends(get_db)):
-    feature = db.query(Feature).filter(Feature.id == feature_id).first()
-    if not feature:
-        raise HTTPException(status_code=404, detail="Feature not found")
-
-    # Optional rename/update - check duplicate code when changed
-    if payload.code and payload.code != feature.code:
-        dup = db.query(Feature).filter(Feature.code == payload.code).first()
-        if dup:
-            raise HTTPException(status_code=400, detail="Feature code already exists")
-        feature.code = payload.code
-
-    if payload.name is not None:
-        feature.name = payload.name
-
-    feature.updated_at = datetime.now()
-    db.commit()
-    db.refresh(feature)
-    return feature
-
-
-@router.delete("/features/{feature_id}", name="delete_feature")
-def delete_feature(feature_id: str, db: Session = Depends(get_db)):
-    feature = db.query(Feature).filter(Feature.id == feature_id).first()
-    if not feature:
-        raise HTTPException(status_code=404, detail="Feature not found")
-    db.delete(feature)
-    db.commit()
-    return {"message": "Feature deleted successfully"}
 

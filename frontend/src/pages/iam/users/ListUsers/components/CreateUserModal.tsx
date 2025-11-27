@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, Form, Input, Button } from 'antd';
 import { useCreateUser } from '@/hooks/mutations/user/useCreateUser';
 import type { CreateUserRequest } from '@/api/user.api';
+import { colors } from '@config/colors';
 
 interface CreateUserModalProps {
   open: boolean;
@@ -95,7 +96,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ open, onCancel, onSuc
               type="primary"
               htmlType="submit"
               loading={createUserMutation.isPending}
-              style={{ background: '#1A3636', borderColor: '#1A3636' }}
+              style={{ background: colors.textPrimary, borderColor: colors.textPrimary }}
             >
               Create User
             </Button>

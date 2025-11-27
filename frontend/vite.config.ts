@@ -26,6 +26,7 @@ export default defineConfig({
       '@api': resolve(__dirname, './src/api'),
       '@assets': resolve(__dirname, './src/assets'),
       '@components': resolve(__dirname, './src/components'),
+      '@config': resolve(__dirname, './src/config'),
       '@hooks': resolve(__dirname, './src/hooks'),
       '@pages': resolve(__dirname, './src/pages'),
       '@routes': resolve(__dirname, './src/routes'),
@@ -33,6 +34,15 @@ export default defineConfig({
       '@styles': resolve(__dirname, './src/styles'),
       '@types': resolve(__dirname, './src/types'),
       '@utils': resolve(__dirname, './src/utils'),
+    },
+  },
+  build: {
+    sourcemap: false,
+    minify: 'terser', 
+    terserOptions: {
+      compress: {
+        drop_console: true, 
+      },
     },
   },
   base: '/'

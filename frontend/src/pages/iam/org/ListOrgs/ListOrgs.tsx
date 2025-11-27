@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Table, Pagination, Button, Tag } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
+import { colors } from "@config/colors";
 import { usePagination } from "@/hooks/common/usePagination";
 import { useDebounce } from "@/hooks/common/useDebounce";
+import { useGetUserPermissions } from "@/hooks/common/useGetUserPermissions";
 import { buildOrgColumns } from "./tableConfig";
 import type { OrgType } from "@/types/types";
 import HeaderInformation from "@components/common/HeaderInformation";
@@ -61,6 +63,9 @@ const ListOrgs: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Get all user permissions
+  const { permissions } = useGetUserPermissions();
+
   const debouncedSearch = useDebounce(searchQuery, 500);
 
   // Filter orgs based on search query
@@ -111,13 +116,17 @@ const ListOrgs: React.FC = () => {
         handleEdit,
         handleDelete,
         handleToggleActive,
+        permissions,
       }),
-    [handleEdit, handleDelete, handleToggleActive]
+    [handleEdit, handleDelete, handleToggleActive, permissions]
   );
 
   return (
     <MainContainer>
       <HeaderInformation
+        breadcrumbs={[
+          { label: "Organizations" },
+        ]}
         title="Organization Management"
         description="Manage organizations and their members"
         action={
@@ -126,7 +135,7 @@ const ListOrgs: React.FC = () => {
             icon={<ReloadOutlined />}
             onClick={handleSyncOrgs}
             loading={loading}
-            style={{ background: '#1A3636', borderColor: '#1A3636' }}
+            style={{ background: colors.textPrimary, borderColor: colors.textPrimary }}
           >
             Sync Organizations
           </Button>
@@ -162,11 +171,11 @@ const ListOrgs: React.FC = () => {
         style={{
           flex: 1,
           minHeight: 0,
-          border: "1px solid #eaeaea",
-          borderRadius: "6px",
+          border: `1px solid ${colors.tableBorder}`,
+          borderRadius: 0,
           overflow: "auto",
           fontSize: "13px",
-          backgroundColor: "#ffffff",
+          backgroundColor: colors.white,
         }}
         scroll={{ x: "max-content" }}
         tableLayout="auto"
@@ -182,9 +191,9 @@ const ListOrgs: React.FC = () => {
         showSizeChanger
         showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
         style={{ 
-          backgroundColor: "#ffffff", 
+          backgroundColor: colors.white, 
           padding: "16px", 
-          borderRadius: "6px",
+          borderRadius: 0,
           boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
         }}
       />

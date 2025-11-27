@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Table, Pagination, Button, Tag } from "antd";
 import { ReloadOutlined, DownloadOutlined } from "@ant-design/icons";
+import { colors } from "@config/colors";
 import { usePagination } from "@/hooks/common/usePagination";
 import { useDebounce } from "@/hooks/common/useDebounce";
 import { buildActivityLogColumns } from "./tableConfig";
@@ -125,6 +126,9 @@ const ActivityLog: React.FC = () => {
   return (
     <MainContainer>
       <HeaderInformation
+        breadcrumbs={[
+          { label: "Activity Log" },
+        ]}
         title="Activity Log"
         description="View system activity and user actions"
         action={
@@ -140,7 +144,7 @@ const ActivityLog: React.FC = () => {
               icon={<ReloadOutlined />}
               onClick={handleRefresh}
               loading={loading}
-              style={{ background: '#1A3636', borderColor: '#1A3636' }}
+              style={{ background: colors.textPrimary, borderColor: colors.textPrimary }}
             >
               Refresh
             </Button>
@@ -177,11 +181,11 @@ const ActivityLog: React.FC = () => {
         style={{
           flex: 1,
           minHeight: 0,
-          border: "1px solid #eaeaea",
-          borderRadius: "6px",
+          border: `1px solid ${colors.tableBorder}`,
+          borderRadius: 0,
           overflow: "auto",
           fontSize: "13px",
-          backgroundColor: "#ffffff",
+          backgroundColor: colors.white,
         }}
         scroll={{ x: "max-content" }}
         tableLayout="auto"
@@ -197,9 +201,9 @@ const ActivityLog: React.FC = () => {
         showSizeChanger
         showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
         style={{ 
-          backgroundColor: "#ffffff", 
+          backgroundColor: colors.white, 
           padding: "16px", 
-          borderRadius: "6px",
+          borderRadius: 0,
           boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
         }}
       />

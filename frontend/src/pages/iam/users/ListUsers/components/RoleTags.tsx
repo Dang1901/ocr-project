@@ -17,7 +17,7 @@ const RoleTags: React.FC<RoleTagsProps> = ({
     return <span style={{ color: "#999", fontSize: "13px" }}>--</span>;
   }
 
-  // Color mapping based on role code - using Red-Black-White theme
+  // Color mapping based on role code
   const getRoleColor = (roleCode: string) => {
     switch (roleCode.toUpperCase()) {
       case "ADMIN":
@@ -44,7 +44,7 @@ const RoleTags: React.FC<RoleTagsProps> = ({
           color={getRoleColor(role.code)}
           style={{ margin: 0 }}
         >
-          {role.name}
+          {role.name || role.level || role.code}
         </Tag>
       ))}
       

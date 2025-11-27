@@ -1,33 +1,51 @@
-from typing import Optional, List
+from typing import Optional
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy import or_
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import get_db
-from app.models.role import Role
-from app.authentication.dependencies import require_token
-from app.schemas.role import RoleBase, Role as RoleSchema, PaginatedRoleResponse
+from app.models.role import Role as RoleModel
+from app.models.department import Department
+from app.authentication.dependencies import require_session
+from app.authorization.utils import check_casbin_permission
+from app.schemas.role import (
+    Role as RoleSchema,
+    PaginatedRoleResponse,
+    RoleCreate,
+    RoleUpdate,
+)
 
 
-router = APIRouter(dependencies=[Depends(require_token)])
+router = APIRouter(dependencies=[Depends(require_session)])
 
 
 @router.get("/roles", response_model=PaginatedRoleResponse, name="list_roles")
 def list_roles(
-    q: Optional[str] = Query(None, description="Search by role name"),
+    request: Request,
+    q: Optional[str] = Query(None, description="Search by role name, code or level"),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    query = db.query(Role)
+    # Check permission
+    check_casbin_permission(request, "ROLE", "list_roles")
+    query = db.query(RoleModel).options(joinedload(RoleModel.department))
     if q:
-        query = query.filter(Role.name.ilike(f"%{q}%"))
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                RoleModel.name.ilike(like),
+                RoleModel.code.ilike(like),
+                RoleModel.level.ilike(like),
+            )
+        )
 
     total = query.count()
     items = (
-        query.order_by(Role.created_at.desc())
+        query.order_by(RoleModel.created_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
@@ -42,34 +60,68 @@ def list_roles(
 
 
 @router.get("/roles/{role_id}", response_model=RoleSchema, name="get_role")
-def get_role(role_id: str, db: Session = Depends(get_db)):
-    role = db.query(Role).filter(Role.id == role_id).first()
+def get_role(
+    role_id: str,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    # Check permission
+    check_casbin_permission(request, "ROLE", "get_role")
+    role = (
+        db.query(RoleModel)
+        .options(joinedload(RoleModel.department))
+        .filter(RoleModel.id == role_id)
+        .first()
+    )
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
     return role
 
 
-@router.post("/roles", response_model=RoleSchema, name="create_role")
-def create_role(payload: RoleBase, db: Session = Depends(get_db)):
-    name = payload.name
-    if not name:
-        raise HTTPException(status_code=400, detail="Missing 'name'")
+def _validate_department(db: Session, department_id: Optional[str]) -> Optional[Department]:
+    if department_id is None:
+        return None
 
-    # Check duplicate by name
-    existed = db.query(Role).filter(Role.name == name).first()
-    if existed:
-        raise HTTPException(status_code=400, detail="Role name already exists")
+    department = db.query(Department).filter(Department.id == department_id).first()
+    if not department:
+        raise HTTPException(status_code=404, detail="Department not found")
+    return department
+
+
+@router.post("/roles", response_model=RoleSchema, name="create_role")
+def create_role(
+    payload: RoleCreate,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    # Check permission
+    check_casbin_permission(request, "ROLE", "create_role")
+    # Check duplicate by code
+    existed_by_code = db.query(RoleModel).filter(RoleModel.code == payload.code).first()
+    if existed_by_code:
+        raise HTTPException(status_code=400, detail="Role code already exists")
+
+    if payload.name:
+        existed_by_name = db.query(RoleModel).filter(RoleModel.name == payload.name).first()
+        if existed_by_name:
+            raise HTTPException(status_code=400, detail="Role name already exists")
+
+    department_id = payload.department_id.strip() if payload.department_id else None
+    _validate_department(db, department_id)
 
     now = datetime.now()
     data = {
         "id": str(uuid.uuid4()),
-        "name": name,
+        "name": payload.name,
         "code": payload.code,
+        "level": payload.level,
+        "level_int": payload.level_int,
+        "department_id": department_id,
         "is_active": payload.is_active if payload.is_active is not None else 1,
         "created_at": now,
         "updated_at": now,
     }
-    role = Role(data)
+    role = RoleModel(data)
     db.add(role)
     db.commit()
     db.refresh(role)
@@ -77,25 +129,38 @@ def create_role(payload: RoleBase, db: Session = Depends(get_db)):
 
 
 @router.put("/roles/{role_id}", response_model=RoleSchema, name="update_role")
-def update_role(role_id: str, payload: RoleBase, db: Session = Depends(get_db)):
-    role = db.query(Role).filter(Role.id == role_id).first()
+def update_role(
+    role_id: str,
+    payload: RoleUpdate,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    # Check permission
+    check_casbin_permission(request, "ROLE", "update_role")
+    role = db.query(RoleModel).filter(RoleModel.id == role_id).first()
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
 
-    # Optional rename - check duplicate name
     if payload.name and payload.name != role.name:
-        dup = db.query(Role).filter(Role.name == payload.name).first()
-        if dup:
+        dup_name = db.query(RoleModel).filter(RoleModel.name == payload.name).first()
+        if dup_name:
             raise HTTPException(status_code=400, detail="Role name already exists")
         role.name = payload.name
 
+    if payload.level is not None:
+        role.level = payload.level
+    if payload.level_int is not None:
+        role.level_int = payload.level_int
+
+    if payload.department_id is not None:
+        department_id = payload.department_id.strip() or None
+        _validate_department(db, department_id)
+        role.department_id = department_id
+
     if payload.is_active is not None:
-        if payload.code == "ADMIN":
-            if payload.is_active == False:
-                raise HTTPException(status_code=400, detail="Cannot update status of Administrator")
-        else:
-            role.is_active = payload.is_active
-            # TODO : Update casbin rule table and casbin rule memory
+        if role.code == "ADMIN" and payload.is_active == 0:
+            raise HTTPException(status_code=400, detail="Cannot deactivate Administrator role")
+        role.is_active = payload.is_active
 
     role.updated_at = datetime.now()
     db.commit()
@@ -104,8 +169,14 @@ def update_role(role_id: str, payload: RoleBase, db: Session = Depends(get_db)):
 
 
 @router.delete("/roles/{role_id}", name="delete_role")
-def delete_role(role_id: str, db: Session = Depends(get_db)):
-    role = db.query(Role).filter(Role.id == role_id).first()
+def delete_role(
+    role_id: str,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    # Check permission
+    check_casbin_permission(request, "ROLE", "delete_role")
+    role = db.query(RoleModel).filter(RoleModel.id == role_id).first()
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
     if role.code == "ADMIN":

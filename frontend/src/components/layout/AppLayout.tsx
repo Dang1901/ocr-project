@@ -21,7 +21,7 @@ const AppLayout: React.FC = () => {
     return (
         <AppContainer>
             <Header onToggleSidebar={toggleSidebar} />
-            <MainBody isCollapsed={isCollapsed} />
+            <MainBody isCollapsed={isCollapsed} onToggleSidebar={toggleSidebar} />
         </AppContainer>
     );
 };

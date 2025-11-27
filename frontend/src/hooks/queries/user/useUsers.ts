@@ -12,15 +12,23 @@ export function getQueryKey(handles: any[]) {
   return ['users', ...handles];
 }
 
-export const useUsers = ({ q, page, pageSize }: UseUsersParams = {}) => {   
+export const useUsers = ({ q, page, pageSize }: UseUsersParams = {}, enabled: boolean = true) => {   
 
   const users = useQuery({
     queryKey: getQueryKey([page, pageSize, q]),
-    queryFn: () =>
-      userApi.getUsers(
+    queryFn: async () => {
+      const response = await userApi.getUsers(
         getUsersFilterParams({ q, page, pageSize }),
-      ),
-    enabled: true,
+      );
+      
+      // Check if response has error
+      if (!response.success || response.error) {
+        throw response;
+      }
+      
+      return response;
+    },
+    enabled: enabled,
     staleTime: 30000,
   });
 
@@ -30,6 +38,8 @@ export const useUsers = ({ q, page, pageSize }: UseUsersParams = {}) => {
     refetch: users.refetch,
     total: responseData?.total || 0,
     isLoading: users.isLoading,
+    isError: users.isError,
+    error: users.error,
     data: responseData?.data || [],
   };
 };

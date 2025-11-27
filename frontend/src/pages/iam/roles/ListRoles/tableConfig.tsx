@@ -1,36 +1,28 @@
-import type { RoleType } from "@types/types";
+import type { Role } from "@/api/role.api";
 import type { ColumnsType } from "antd/es/table";
-import { Button, Dropdown, Tag } from "antd";
+import { Button, Dropdown } from "antd";
 import { IconDotsVertical, IconEdit, IconTrash } from "@tabler/icons-react";
 import type { MenuProps } from "antd";
+import { Link } from "react-router-dom";
+import StatusBadge from "@/components/common/StatusBadge";
+import { hasPermission } from "@/hooks/common/useGetUserPermissions";
 
 interface RoleColumnProps {
   handleEdit?: (roleId: string) => void;
-  handleDelete?: (payload: { id: string; name: string }) => void;
-  handleToggleActive?: (roleId: string) => void;
+  handleDelete?: (payload: { id: string; name?: string }) => void;
+  permissions?: { [featureCode: string]: string[] };
 }
 
 export const buildRoleColumns = ({
   handleEdit,
   handleDelete,
-  handleToggleActive,
-}: RoleColumnProps): ColumnsType<RoleType> => {
-  const getActionMenu = (record: RoleType): MenuProps => {
+  permissions = {},
+}: RoleColumnProps): ColumnsType<Role> => {
+  const getActionMenu = (record: Role): MenuProps => {
     const menuItems = [];
     
-    // if (handleToggleActive) {
-    //   menuItems.push({
-    //     key: "toggle-active",
-    //     label: (
-    //       <span style={{ display: "flex", alignItems: "center", gap: 8, color: "#1A3636", fontWeight: 500 }}>
-    //         <IconToggle size={16} /> {record.is_active ? "Deactivate" : "Activate"}
-    //       </span>
-    //     ),
-    //     onClick: () => handleToggleActive(record.id),
-    //   });
-    // }
-
-    if (handleEdit) {
+    // Check permission for edit
+    if (handleEdit && hasPermission(permissions, "ROLE", "update_role")) {
       menuItems.push({
         key: "edit",
         label: (
@@ -42,7 +34,8 @@ export const buildRoleColumns = ({
       });
     }
 
-    if (handleDelete) {
+    // Check permission for delete
+    if (handleDelete && record.code !== "ADMIN" && hasPermission(permissions, "ROLE", "delete_role")) {
       menuItems.push({
         key: "delete",
         label: (
@@ -62,33 +55,55 @@ export const buildRoleColumns = ({
       title: "Role Name",
       key: "name",
       width: 200,
-      render: (_: any, record: RoleType) => (
-        <div style={{ fontWeight: 500, fontSize: "14px", color: "#000000" }}>
-          {record.name}
+      render: (_: any, record: Role) => (
+        <Link 
+          to={`/roles/${record.id}`}
+          style={{ 
+            fontWeight: 500, 
+            fontSize: "14px", 
+            color: "#1890ff",
+            textDecoration: "none"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.textDecoration = "underline";
+            e.currentTarget.style.color = "#40a9ff";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.textDecoration = "none";
+            e.currentTarget.style.color = "#1890ff";
+          }}
+        >
+          {record.name || "--"}
+        </Link>
+      ),
+      sorter: (a: Role, b: Role) => (a.name || "").localeCompare(b.name || ""),
+    },
+    {
+      title: "Level",
+      dataIndex: "level",
+      key: "level",
+      width: 180,
+      render: (_: string, record: Role) => (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: "13px", color: "#000000" }}>
+            {record.level || "--"}
+          </span>
+          {record.level_int !== undefined && (
+            <span style={{ fontSize: "11px", color: "#888" }}>
+              Order: {record.level_int}
+            </span>
+          )}
         </div>
       ),
-      sorter: (a: RoleType, b: RoleType) => a.name.localeCompare(b.name),
     },
     {
-      title: "Code",
-      dataIndex: "code",
-      key: "code",
-      width: 150,
-      render: (code: string) => (
-        <Tag color="#1A3636" style={{ fontSize: "12px", fontWeight: 600 }}>
-          {code}
-        </Tag>
-      ),
-      sorter: (a: RoleType, b: RoleType) => a.code.localeCompare(b.code),
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-      width: 300,
-      render: (description: string) => (
+      title: "Department",
+      dataIndex: "department",
+      key: "department",
+      width: 200,
+      render: (_: any, record: Role) => (
         <span style={{ fontSize: "13px", color: "#000000" }}>
-          {description || "--"}
+          {record.department?.name || "--"}
         </span>
       ),
     },
@@ -96,25 +111,14 @@ export const buildRoleColumns = ({
       title: "Status",
       dataIndex: "is_active",
       key: "is_active",
-      width: 100,
-      render: (is_active: boolean) => (
-        <Tag color={is_active ? "#1A3636" : "default"}>
-          {is_active ? "Active" : "Inactive"}
-        </Tag>
-      ),
-      sorter: (a: RoleType, b: RoleType) => (a.is_active ? 1 : 0) - (b.is_active ? 1 : 0),
-    },
-    {
-      title: "Users",
-      dataIndex: "user_count",
-      key: "user_count",
-      width: 100,
-      render: (count: number) => (
-        <span style={{ fontSize: "13px", color: "#000000", fontWeight: 500 }}>
-          {count || 0}
-        </span>
-      ),
-      sorter: (a: RoleType, b: RoleType) => (a.user_count || 0) - (b.user_count || 0),
+      width: 120,
+      align: "center" as const,
+      render: (is_active: number | undefined) => {
+        const active = is_active === undefined ? true : is_active === 1;
+        return <StatusBadge status={active ? "ACTIVE" : "INACTIVE"} />;
+      },
+      sorter: (a: Role, b: Role) =>
+        (a.is_active ?? 1) - (b.is_active ?? 1),
     },
     {
       title: "Created At",
@@ -126,15 +130,19 @@ export const buildRoleColumns = ({
           {created_at ? new Date(created_at).toLocaleDateString() : '--'}
         </span>
       ),
-      sorter: (a: RoleType, b: RoleType) => 
+      sorter: (a: Role, b: Role) => 
         (a.created_at || '').localeCompare(b.created_at || ''),
     },
-    {
+    // Only include Actions column if there are any actions available
+    ...((
+      (handleEdit && hasPermission(permissions, "ROLE", "update_role")) ||
+      (handleDelete && hasPermission(permissions, "ROLE", "delete_role"))
+    ) ? [{
       title: "Actions",
       key: "actions",
       width: 80,
       align: "center" as const,
-      render: (_, record: RoleType) => {
+      render: (_, record: Role) => {
         const menu = getActionMenu(record);
         if (menu.items && menu.items.length > 0) {
           return (
@@ -160,7 +168,7 @@ export const buildRoleColumns = ({
         }
         return null;
       },
-    },
+    }] : []),
   ];
 };
 

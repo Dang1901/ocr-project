@@ -3,17 +3,20 @@ import type { ColumnsType } from "antd/es/table";
 import { Button, Dropdown, Tag } from "antd";
 import { IconDotsVertical, IconEdit, IconTrash,  } from "@tabler/icons-react";
 import type { MenuProps } from "antd";
+import { hasPermission } from "@/hooks/common/useGetUserPermissions";
 
 interface OrgColumnProps {
   handleEdit?: (orgId: string) => void;
   handleDelete?: (payload: { id: string; name: string }) => void;
   handleToggleActive?: (orgId: string) => void;
+  permissions?: { [featureCode: string]: string[] };
 }
 
 export const buildOrgColumns = ({
   handleEdit,
   handleDelete,
   handleToggleActive,
+  permissions = {},
 }: OrgColumnProps): ColumnsType<OrgType> => {
   const getActionMenu = (record: OrgType): MenuProps => {
     const menuItems = [];
@@ -30,7 +33,8 @@ export const buildOrgColumns = ({
     //   });
     // }
 
-    if (handleEdit) {
+    // Check permission for edit
+    if (handleEdit && hasPermission(permissions, "ORG", "update_org")) {
       menuItems.push({
         key: "edit",
         label: (
@@ -42,7 +46,8 @@ export const buildOrgColumns = ({
       });
     }
 
-    if (handleDelete) {
+    // Check permission for delete
+    if (handleDelete && hasPermission(permissions, "ORG", "delete_org")) {
       menuItems.push({
         key: "delete",
         label: (
@@ -129,7 +134,11 @@ export const buildOrgColumns = ({
       sorter: (a: OrgType, b: OrgType) => 
         (a.created_at || '').localeCompare(b.created_at || ''),
     },
-    {
+    // Only include Actions column if there are any actions available
+    ...((
+      (handleEdit && hasPermission(permissions, "ORG", "update_org")) ||
+      (handleDelete && hasPermission(permissions, "ORG", "delete_org"))
+    ) ? [{
       title: "Actions",
       key: "actions",
       width: 80,
@@ -160,7 +169,7 @@ export const buildOrgColumns = ({
         }
         return null;
       },
-    },
+    }] : []),
   ];
 };
 

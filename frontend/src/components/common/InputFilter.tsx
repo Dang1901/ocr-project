@@ -1,6 +1,7 @@
 import React from 'react';
 import { Input } from 'antd';
 import { IconSearch } from '@tabler/icons-react';
+import { colors } from '@config/colors';
 
 interface InputFilterProps {
   label: string;
@@ -30,7 +31,7 @@ const InputFilter: React.FC<InputFilterProps> = ({
         value={value}
         allowClear={allowClear}
         placeholder={placeholder}
-        prefix={<IconSearch size={16} style={{ color: '#1A3636' }} />}
+        prefix={<IconSearch size={16} style={{ color: colors.textPrimary }} />}
         onChange={(e) => onChange(e.target.value)}
         onPressEnter={onPressEnter}
         style={{

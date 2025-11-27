@@ -23,9 +23,15 @@ class UserImplement(UserInterface):
         super().__init__()
 
     def get_users(self, q: str, page: int, page_size: int) -> Tuple:
+        """Get all users (both active and inactive, but not deleted)"""
         session = Session()
         try:
-            query = session.query(UserEntity).options(joinedload(UserEntity.roles)).filter(
+            query = session.query(UserEntity).options(
+                joinedload(UserEntity.roles),
+                joinedload(UserEntity.department)
+            ).filter(
+                # Only filter out deleted users, not inactive users
+                # Inactive users (is_active="0") should still be visible
                 UserEntity.is_deleted == IS_NOT_DELETED,
             )
             if q:
@@ -63,7 +69,10 @@ class UserImplement(UserInterface):
         try:
             user = (
                 session.query(UserEntity)
-                .options(joinedload(UserEntity.roles))
+                .options(
+                    joinedload(UserEntity.roles),
+                    joinedload(UserEntity.department)
+                )
                 .filter(
                     UserEntity.id == user_id,
                     UserEntity.is_deleted == IS_NOT_DELETED,
@@ -86,7 +95,10 @@ class UserImplement(UserInterface):
         try:
             user = (
                 session.query(UserEntity)
-                .options(joinedload(UserEntity.roles))
+                .options(
+                    joinedload(UserEntity.roles),
+                    joinedload(UserEntity.department)
+                )
                 .filter(
                     UserEntity.email == email,
                     # UserEntity.is_deleted == IS_NOT_DELETED, 
@@ -111,7 +123,10 @@ class UserImplement(UserInterface):
         try:
             user = (
                 session.query(UserEntity)
-                .options(joinedload(UserEntity.roles))
+                .options(
+                    joinedload(UserEntity.roles),
+                    joinedload(UserEntity.department)
+                )
                 .filter(
                     UserEntity.username == username,
                     UserEntity.is_deleted == IS_NOT_DELETED,
@@ -228,16 +243,54 @@ class UserImplement(UserInterface):
         """Assign roles to a user"""
         session = Session()
         try:
-            # Insert new role assignments
-            for role_id in role_ids:
-                session.execute(
-                    user_roles.insert().values(
-                        user_id=user_id,
-                        role_id=role_id
-                    )
-                )
+            # Get user to get username
+            user = session.query(UserEntity).filter(UserEntity.id == user_id).first()
+            if not user:
+                logging.error(f"User not found: {user_id}")
+                return False
             
-            session.commit()
+            # Get roles to get role_code
+            roles = session.query(Role).filter(Role.id.in_(role_ids)).all()
+            if len(roles) != len(role_ids):
+                logging.error(f"Some roles not found. Expected {len(role_ids)}, found {len(roles)}")
+                return False
+            
+            # Check existing assignments to avoid duplicates
+            existing_assignments = session.execute(
+                user_roles.select().where(
+                    user_roles.c.user_id == user_id
+                )
+            ).fetchall()
+            existing_role_ids = {row.role_id for row in existing_assignments}
+            
+            # Insert new role assignments (only if not already assigned)
+            # Insert both new columns (user_id, role_id) and old columns (username, role_code) for compatibility
+            inserted_count = 0
+            for role in roles:
+                if role.id not in existing_role_ids:
+                    try:
+                        # Insert with both new and old columns for database compatibility
+                        session.execute(
+                            user_roles.insert().values(
+                                user_id=user_id,
+                                role_id=role.id,
+                                username=user.username,  # For backward compatibility
+                                role_code=role.code      # For backward compatibility
+                            )
+                        )
+                        inserted_count += 1
+                    except Exception as e:
+                        # Skip if duplicate (shouldn't happen but just in case)
+                        logging.warning(f"Role {role.id} already assigned to user {user_id}: {e}")
+                        continue
+            
+            if inserted_count > 0:
+                session.commit()
+                logging.info(f"Assigned {inserted_count} new role(s) to user {user_id}")
+            else:
+                logging.info(f"All roles already assigned to user {user_id}")
+                session.commit()
+            
             return True
         except Exception as e:
             session.rollback()
@@ -291,17 +344,31 @@ class UserImplement(UserInterface):
         """Update user roles (replace all existing roles with new ones)"""
         session = Session()
         try:
+            # Get user to get username
+            user = session.query(UserEntity).filter(UserEntity.id == user_id).first()
+            if not user:
+                logging.error(f"User not found: {user_id}")
+                return False
+            
+            # Get roles to get role_code
+            roles = session.query(Role).filter(Role.id.in_(role_ids)).all()
+            if len(roles) != len(role_ids):
+                logging.error(f"Some roles not found. Expected {len(role_ids)}, found {len(roles)}")
+                return False
+            
             # Remove all existing roles
             session.execute(
                 user_roles.delete().where(user_roles.c.user_id == user_id)
             )
             
-            # Add new roles
-            for role_id in role_ids:
+            # Add new roles with both new and old columns for compatibility
+            for role in roles:
                 session.execute(
                     user_roles.insert().values(
                         user_id=user_id,
-                        role_id=role_id
+                        role_id=role.id,
+                        username=user.username,  # For backward compatibility
+                        role_code=role.code      # For backward compatibility
                     )
                 )
             

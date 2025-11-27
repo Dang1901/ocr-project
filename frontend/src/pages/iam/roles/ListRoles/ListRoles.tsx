@@ -1,135 +1,137 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { Table, Pagination, Button, Tag } from "antd";
-import { ReloadOutlined } from "@ant-design/icons";
+import { Table, Pagination, Button, Modal } from "antd";
+import { ReloadOutlined, PlusOutlined } from "@ant-design/icons";
+import { colors } from "@config/colors";
 import { usePagination } from "@/hooks/common/usePagination";
 import { useDebounce } from "@/hooks/common/useDebounce";
+import { useGetRoles } from "@/hooks/queries/role/useGetRoles";
+import { usePermissionError } from "@/hooks/common/usePermissionError";
+import { useGetUserPermissions, hasPermission as checkPermission } from "@/hooks/common/useGetUserPermissions";
 import { buildRoleColumns } from "./tableConfig";
 import HeaderInformation from "@components/common/HeaderInformation";
 import InputFilter from "@components/common/InputFilter";
+import PermissionWarningBanner from "@components/common/PermissionWarningBanner";
 import { MainContainer, FilterContainer } from "@/components/layout/MainContainer.styles";
-import type { RoleType } from "@/types/types";
-import { useAppDispatch } from "@/store";
-import { addToast, createToast } from "@/store/slices/toast_slice";
-
-// Mock data - will be replaced with actual API calls
-const mockRoles: RoleType[] = [
-  {
-    id: "1",
-    name: "Admin",
-    code: "ADMIN",
-    description: "Administrator with full system access",
-    is_active: true,
-    created_at: "2024-01-15T10:30:00Z",
-    updated_at: "2024-01-15T10:30:00Z",
-    user_count: 5,
-  },
-  {
-    id: "2",
-    name: "Project Manager",
-    code: "PROJECT_MANAGER",
-    description: "Manages projects and team members",
-    is_active: true,
-    created_at: "2024-01-20T14:20:00Z",
-    updated_at: "2024-01-20T14:20:00Z",
-    user_count: 12,
-  },
-  {
-    id: "3",
-    name: "Test Engineer",
-    code: "TEST_ENGINEER",
-    description: "Performs testing and quality assurance",
-    is_active: true,
-    created_at: "2024-02-01T09:15:00Z",
-    updated_at: "2024-02-01T09:15:00Z",
-    user_count: 8,
-  },
-  {
-    id: "4",
-    name: "Viewer",
-    code: "VIEWER",
-    description: "Read-only access to view data",
-    is_active: true,
-    created_at: "2024-02-10T11:00:00Z",
-    updated_at: "2024-02-10T11:00:00Z",
-    user_count: 20,
-  },
-];
+import CreateRoleModal from "./components/CreateRoleModal";
+import EditRoleModal from "./components/EditRoleModal";
+import { useDeleteRole } from "@/hooks/mutations/role/useDeleteRole";
+import type { Role } from "@/api/role.api";
 
 const ListRoles: React.FC = () => {
-  const dispatch = useAppDispatch();
   const { page, pageSize, setPage, setPageSize } = usePagination(1, 10);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
   const debouncedSearch = useDebounce(searchQuery, 500);
 
-  // Filter roles based on search query
-  const filteredRoles = useMemo(() => {
-    if (!debouncedSearch) return mockRoles;
-    const query = debouncedSearch.toLowerCase();
-    return mockRoles.filter(
-      (role) =>
-        role.name.toLowerCase().includes(query) ||
-        role.code.toLowerCase().includes(query) ||
-        (role.description && role.description.toLowerCase().includes(query))
-    );
-  }, [debouncedSearch]);
+  // Get all user permissions
+  const { permissions, isLoading: isCheckingPermission } = useGetUserPermissions();
+  
+  // Check permission trước khi gọi API
+  const hasListPermission = checkPermission(permissions, "ROLE", "list_roles");
 
-  // Paginate filtered roles
-  const paginatedRoles = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredRoles.slice(start, end);
-  }, [filteredRoles, page, pageSize]);
+  const rolesQuery = useGetRoles({
+    q: debouncedSearch || undefined,
+    page,
+    pageSize,
+  }, hasListPermission); // Chỉ gọi API nếu có permission
 
-  const total = filteredRoles.length;
+  const roles = rolesQuery.items || [];
+  const total = rolesQuery.total || 0;
+  const isLoading = rolesQuery.isLoading || isCheckingPermission;
+  const refetch = rolesQuery.refetch;
+  
+  // Check permission error
+  const permissionError = usePermissionError(rolesQuery.error);
+
+  const deleteRoleMutation = useDeleteRole({
+    onSuccess: () => {
+      refetch();
+    },
+  });
 
   const handleSyncRoles = () => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      dispatch(addToast(createToast.success("Roles synced successfully")));
-    }, 1000);
+    refetch();
   };
 
   const handleEdit = useCallback((roleId: string) => {
-    dispatch(addToast(createToast.info("Edit Role", `Edit role: ${roleId}`)));
-  }, [dispatch]);
+    const role = roles.find((item) => item.id === roleId) || null;
+    if (role) {
+      setSelectedRole(role);
+      setIsEditModalVisible(true);
+    }
+  }, [roles]);
 
-  const handleDelete = useCallback((payload: { id: string; name: string }) => {
-    dispatch(addToast(createToast.warning("Delete Role", `Delete role: ${payload.name}`)));
-  }, [dispatch]);
-
-  const handleToggleActive = useCallback((roleId: string) => {
-    dispatch(addToast(createToast.info("Toggle Active Status", `Toggle active status for role: ${roleId}`)));
-  }, [dispatch]);
+  const handleDelete = useCallback((payload: { id: string; name?: string }) => {
+    Modal.confirm({
+      title: "Delete Role",
+      content: `Are you sure you want to delete "${payload.name || "this role"}"? This action cannot be undone.`,
+      okText: "Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: () => deleteRoleMutation.mutate(payload.id),
+    });
+  }, [deleteRoleMutation]);
 
   const columns = useMemo(
     () =>
       buildRoleColumns({
         handleEdit,
         handleDelete,
-        handleToggleActive,
+        permissions,
       }),
-    [handleEdit, handleDelete, handleToggleActive]
+    [handleEdit, handleDelete, permissions]
   );
+
+  const handleCreateSuccess = () => {
+    setIsCreateModalVisible(false);
+    refetch();
+  };
+
+  const handleEditSuccess = () => {
+    setIsEditModalVisible(false);
+    setSelectedRole(null);
+    refetch();
+  };
+
+  // Check if user has permission
+  const hasPermission = hasListPermission && !permissionError.isPermissionDenied;
+  const showWarning = !isCheckingPermission && !hasPermission;
 
   return (
     <MainContainer>
-      <HeaderInformation
-        title="Role Management"
-        description="Manage roles and their permissions"
+      {showWarning && (
+        <PermissionWarningBanner message="You do not have sufficient permissions to view this page!" />
+      )}
+      
+      {!showWarning && (
+        <>
+          <HeaderInformation
+            breadcrumbs={[
+              { label: "Roles" },
+            ]}
+            title="Role Management"
+            description="Manage roles and their permissions"
         action={
-          <Button
-            type="primary"
-            icon={<ReloadOutlined />}
-            onClick={handleSyncRoles}
-            loading={loading}
-            style={{ background: '#1A3636', borderColor: '#1A3636' }}
-          >
-            Sync Roles
-          </Button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setIsCreateModalVisible(true)}
+              style={{ background: colors.textPrimary, borderColor: colors.textPrimary }}
+            >
+              Add Role
+            </Button>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={handleSyncRoles}
+              loading={isLoading}
+            >
+              Refresh
+            </Button>
+          </div>
         }
       />
       
@@ -155,18 +157,18 @@ const ListRoles: React.FC = () => {
 
       <Table
         columns={columns}
-        dataSource={paginatedRoles}
+        dataSource={roles || []}
         rowKey="id"
-        loading={loading}
+        loading={isLoading}
         pagination={false}
         style={{
           flex: 1,
           minHeight: 0,
-          border: "1px solid #eaeaea",
-          borderRadius: "6px",
+          border: `1px solid ${colors.tableBorder}`,
+          borderRadius: 0,
           overflow: "auto",
           fontSize: "13px",
-          backgroundColor: "#ffffff",
+          backgroundColor: colors.white,
         }}
         scroll={{ x: "max-content" }}
         tableLayout="auto"
@@ -177,17 +179,40 @@ const ListRoles: React.FC = () => {
         current={page}
         pageSize={pageSize}
         total={total}
-        onChange={(p) => setPage(p)}
+        onChange={(p, size) => {
+          setPage(p);
+          if (size !== pageSize) {
+            setPageSize(size);
+          }
+        }}
         onShowSizeChange={(_, size) => setPageSize(size)}
         showSizeChanger
         showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
         style={{ 
-          backgroundColor: "#ffffff",     
+          backgroundColor: colors.white,     
           padding: "16px", 
-          borderRadius: "6px",
+          borderRadius: 0,
           boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
         }}
       />
+
+      <CreateRoleModal
+        open={isCreateModalVisible}
+        onCancel={() => setIsCreateModalVisible(false)}
+        onSuccess={handleCreateSuccess}
+      />
+
+      <EditRoleModal
+        open={isEditModalVisible}
+        role={selectedRole}
+        onCancel={() => {
+          setIsEditModalVisible(false);
+          setSelectedRole(null);
+        }}
+        onSuccess={handleEditSuccess}
+      />
+        </>
+      )}
     </MainContainer>
   );
 };
