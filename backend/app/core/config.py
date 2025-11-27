@@ -62,6 +62,24 @@ class Settings:
     # File Upload
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "uploads")
     MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", "10485760"))  # 10MB default
+    
+    # OCR Worker threads
+    OCR_WORKER_THREADS: int = int(os.getenv("OCR_WORKER_THREADS", "4"))
+
+    # MinIO Configuration
+    MINIO_ENDPOINT: str = os.getenv("MINIO_ENDPOINT", "minio.example.com")
+    MINIO_ACCESS_KEY: str = os.getenv("MINIO_ACCESS_KEY", "YOUR_MINIO_KEY")
+    MINIO_SECRET_KEY: str = os.getenv("MINIO_SECRET_KEY", "YOUR_MINIO_SECRET")
+    MINIO_BUCKET: str = os.getenv("MINIO_BUCKET", "my-bucket")
+
+    # FPT API Configuration
+    API_KEY: str = os.getenv("API_KEY", "sk-gojYePiQueqAHdllper3UA")
+    VLM_MODEL: str = os.getenv("VLM_MODEL", "FPT.AI-KIE-v1.7")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-oss-120b")
+
+    # VLM and LLM API URLs (separate from API_URL)
+    VLM_API_URL: str = os.getenv("VLM_API_URL", "https://mkp-api.fptcloud.com/v1/chat/completions")
+    LLM_API_URL: str = os.getenv("LLM_API_URL", "https://mkp-api.fptcloud.com/v1/chat/completions")
 
     class Config:
         env_file = ".env"

@@ -1,7 +1,7 @@
 import traceback
 import logging
 from datetime import datetime
-from db.session import SessionLocal as Session
+from app.db.session import SessionLocal as Session
 from app.models.activity_log import ActivityLog as ActivityLogEntity
 
 from app.repository.activity_log.activity_log_interface import ActivityLogInterface

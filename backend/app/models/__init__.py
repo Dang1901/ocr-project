@@ -10,6 +10,7 @@ from app.models.feature import Feature
 from app.models.feature_operation import FeatureOperation
 from app.models.document import Document
 from app.models.document_permission import DocumentPermission
+from app.models.orc_page import OcrPage
 
 __all__ = [
     "Base", 
@@ -23,5 +24,6 @@ __all__ = [
     "FeatureOperation",
     "Document",
     "DocumentPermission"
+    "OcrPage"
 ]
 

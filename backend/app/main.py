@@ -1,4 +1,5 @@
 import inject
+import threading
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -15,7 +16,9 @@ from app.repository.session.session_interface import SessionInterface
 from app.repository.session.session_implement import SessionImplement
 from app.repository.otp.otp_interface import OTPInterface
 from app.repository.otp.otp_implement import OTPImplement
-
+from app.ocr.ocr import worker_loop
+from app.utils.minio_client import MinioService
+import threading
 # Import controllers
 from app.authorization.controller import (
     role_controller,
@@ -26,7 +29,8 @@ from app.authorization.controller import (
 )
 from app.controllers.v1 import (
     document_controller, 
-    activity_log
+    activity_log,
+    ocr
     )
 
 from app.middleware.activity_log import ActivityLogMiddleware
@@ -41,6 +45,18 @@ from app.authorization.create_operations import sync_feature_operations
 async def lifespan(app: FastAPI):
     # Startup: Chạy khi server khởi động
     print("🚀 Starting OCR Project API...")
+        # Start OCR worker threads
+    workers = []
+    for i in range(settings.OCR_WORKER_THREADS):
+        t = threading.Thread(target=worker_loop, args=(i + 1,), daemon=True)
+        t.start()
+        workers.append(t)
+
+    # Start MinIO cache cleanup thread
+    threading.Thread(
+        target=MinioService().loop_clear_expired_cache,
+        daemon=True
+    ).start()
     app.state.enforcer = get_enforcer()
     setup_entities()
     
@@ -103,6 +119,7 @@ app.include_router(department_controller.router, prefix="/api/v1", tags=["DEPART
 app.include_router(document_controller.router, prefix="/api/v1", tags=["DOCUMENT"])
 app.include_router(document_permission_controller.router, prefix="/api/v1", tags=["DOCUMENT_PERMISSION"])
 app.include_router(current_user_router, prefix="/api/v1", tags=["CURRENT_USER"])
+app.include_router(ocr.router, prefix="/api/v1", tags=["OCR"])
 app.include_router(activity_log.router, prefix="/api/v1", tags=["ACTIVITY_LOG"])
 
 # Sync feature operations từ API routes (sau khi tất cả routers đã được include)
