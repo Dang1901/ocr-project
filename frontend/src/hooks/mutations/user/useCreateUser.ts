@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { userApi, type CreateUserRequest,  } from '@/api/user.api';
+import { userApi } from '@/api/user.api';
+import type { CreateUserRequest } from '@/types/user.types';
 import { useAppDispatch } from '@/store';
 import { addToast, createToast } from '@/store/slices/toast_slice';
 

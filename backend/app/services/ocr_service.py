@@ -60,8 +60,12 @@ class OcrService:
     def upload_file_and_create_document(
         self, 
         file_data: bytes, 
-        filename: str, 
-        db: Session
+        filename: str,
+        department_id: Optional[str] = None,
+        document_type: Optional[str] = None,
+        created_by: Optional[str] = None,
+        owner: Optional[str] = None,
+        db: Session = None
     ) -> Dict:
         """
         Upload PDF file to MinIO, create Document record, count pages, and create OcrPage records
@@ -91,7 +95,11 @@ class OcrService:
                 "file_path": pdf_s3_path,
                 "filename": filename,
                 "total_pages": total_pages,
-                "status": "ready"
+                "status": "ready",
+                "department_id": department_id,
+                "document_type": document_type,
+                "created_by": created_by,
+                "owner": owner
             }
 
             document = Document(document_data)
@@ -102,27 +110,28 @@ class OcrService:
             # Get the document_id (auto-generated or provided)
             document_id = document.id
 
-            # Create OcrPage records using bulk insert for better performance
+            # Create OcrPage records
             # Tách transaction riêng để tránh lock timeout
             created_pages = []
-            pages_data = []
             for page_num in range(1, total_pages + 1):
-                pages_data.append({
-                    "document_id": document_id,
-                    "page_number": page_num,
-                    "status": "pending",
-                    "ocr_markdown": None,
-                    "llm_json": None,
-                    "llm_json_alt": None
-                })
+                # Create OcrPage object directly
+                ocr_page = OcrPage()
+                ocr_page.document_id = document_id
+                ocr_page.page_number = page_num
+                ocr_page.status = "pending"
+                ocr_page.ocr_markdown = None
+                ocr_page.llm_json = None
+                ocr_page.llm_json_alt = None
+                # id will be auto-generated (UUID)
+                # created_at and updated_at will be set by server_default
+                db.add(ocr_page)
                 created_pages.append({
                     "page_number": page_num,
                     "status": "pending"
                 })
 
-            # Bulk insert OcrPage records trong transaction riêng
-            if pages_data:
-                db.bulk_insert_mappings(OcrPage, pages_data)
+            # Commit all OcrPage records
+            if created_pages:
                 db.commit()  # Commit pages
 
             return {
@@ -133,6 +142,9 @@ class OcrService:
 
         except Exception as e:
             db.rollback()
+            import traceback
+            error_detail = traceback.format_exc()
+            print(f"Error in upload_file_and_create_document: {error_detail}")
             raise Exception(f"Failed to upload file and create document: {str(e)}")
         finally:
             # Cleanup temporary files
@@ -143,21 +155,21 @@ class OcrService:
                 except Exception:
                     pass
 
-    def get_document_by_id(self, document_id: int, db: Session) -> Optional[Document]:
+    def get_document_by_id(self, document_id: str, db: Session) -> Optional[Document]:
         """Get a document by ID"""
         return db.query(Document).filter(Document.id == document_id).first()
 
-    def get_pages_by_document_id(self, document_id: int, db: Session) -> List[OcrPage]:
+    def get_pages_by_document_id(self, document_id: str, db: Session) -> List[OcrPage]:
         """Get all pages for a document"""
         return db.query(OcrPage).filter(OcrPage.document_id == document_id).order_by(OcrPage.page_number).all()
 
-    def get_page_by_id(self, page_id: int, db: Session) -> Optional[OcrPage]:
+    def get_page_by_id(self, page_id: str, db: Session) -> Optional[OcrPage]:
         """Get a specific page by ID"""
         return db.query(OcrPage).filter(OcrPage.id == page_id).first()
 
     def get_ocr_result_by_document_id(
         self, 
-        document_id: int, 
+        document_id: str, 
         db: Session,
         page: int = 1,
         page_size: int = 20

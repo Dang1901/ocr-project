@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { Table, Pagination, Button, Modal } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { Table, Pagination,  Modal } from "antd";
+import { UnorderedListOutlined } from "@ant-design/icons";
 import { colors } from "@config/colors";
 import { usePagination } from "@/hooks/common/usePagination";
 import { useDebounce } from "@/hooks/common/useDebounce";
@@ -15,7 +15,7 @@ import { MainContainer, FilterContainer } from "@/components/layout/MainContaine
 import { buildDocumentColumns } from "./tableConfig";
 import CreateDocumentModal from "./components/CreateDocumentModal";
 import EditDocumentModal from "./components/EditDocumentModal";
-import type { Document } from "@/api/document.api";
+import type { Document } from "@/types/document.types";
 
 const ListDocuments: React.FC = () => {
   const { page, pageSize, setPage, setPageSize } = usePagination(1, 10);
@@ -30,7 +30,7 @@ const ListDocuments: React.FC = () => {
   
   // Check permission trước khi gọi API
   const hasListPermission = checkPermission(permissions, "DOCUMENT", "list_documents");
-  const hasCreatePermission = checkPermission(permissions, "DOCUMENT", "create_document");
+  // const hasCreatePermission = checkPermission(permissions, "DOCUMENT", "create_document");
 
   const documentsQuery = useDocuments({
     q: debouncedSearch || undefined,
@@ -67,16 +67,16 @@ const ListDocuments: React.FC = () => {
   }, [deleteDocumentMutation]);
 
   const handleEdit = useCallback((documentId: string) => {
-    const document = documents?.find((d: any) => d.id === documentId);
+    const document = documents?.find((d: Document) => d.id === documentId);
     if (document) {
       setSelectedDocument(document);
       setIsEditModalVisible(true);
     }
   }, [documents]);
 
-  const handleCreate = useCallback(() => {
-    setIsCreateModalVisible(true);
-  }, []);
+  // const handleCreate = useCallback(() => {
+  //   setIsCreateModalVisible(true);
+  // }, []);
 
   const handleCreateSuccess = () => {
     setIsCreateModalVisible(false);
@@ -117,18 +117,19 @@ const ListDocuments: React.FC = () => {
             ]}
             title="Document Management"
             description="Manage documents and files"
-            action={
-              hasCreatePermission && (
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={handleCreate}
-                  style={{ background: colors.textPrimary, borderColor: colors.textPrimary }}
-                >
-                  Add Document
-                </Button>
-              )
-            }
+            icon={<UnorderedListOutlined />}
+            // action={
+            //   hasCreatePermission && (
+            //     <Button
+            //       type="primary"
+            //       icon={<PlusOutlined />}
+            //       onClick={handleCreate}
+            //       style={{ background: colors.textPrimary, borderColor: colors.textPrimary }}
+            //     >
+            //       Add Document
+            //     </Button>
+            //   )
+            // }
           />
       
           <FilterContainer>

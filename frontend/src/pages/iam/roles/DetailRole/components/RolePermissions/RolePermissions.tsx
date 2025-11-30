@@ -4,6 +4,7 @@ import { colors } from "@config/colors";
 import { usePermissions } from "@/hooks/queries/permission/usePermissions";
 import { permissionColumns } from "./tableConfig";
 import { useCreatePermissions } from "@/hooks/mutations/permission/useCreatePermissions";
+import { useGetUserPermissions, hasPermission as checkPermission } from "@/hooks/common/useGetUserPermissions";
 import CreatePermission from "./CreatePermission";
 import UpdatePermission from "./UpdatePermission";
 import DeletePermission from "./DeletePermission";
@@ -85,7 +86,10 @@ const RolePermissions: React.FC<RolePermissionsProps> = ({
     refetch();
   };
 
-  const canEditPermissions = true; // TODO: Add permission check
+  // Check permission to edit permissions
+  const { permissions: userPermissions } = useGetUserPermissions();
+  const canEditPermissions = checkPermission(userPermissions, "PERMISSION", "update_permission") || 
+                            checkPermission(userPermissions, "PERMISSION", "create_permission");
 
   return (
     <>

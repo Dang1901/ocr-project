@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL, API_PATH } from '../utils/constants';
+import type { LoginRequest, RegisterRequest, ForgotPasswordRequest, VerifyOTPRequest, ResetPasswordRequest } from '../types/auth.types';
 
 // Create isolated auth client to avoid circular dependency
 const authClient = axios.create({
@@ -38,7 +39,7 @@ export async function login(username: string | null, email: string | null, passw
       username: username || null,
       email: email || null,
       password,
-    });
+    } as LoginRequest);
     return res.data;
   } catch (error: any) {
     const errorData = error.response?.data;
@@ -49,13 +50,7 @@ export async function login(username: string | null, email: string | null, passw
   }
 }
 
-export async function register(userData: {
-  username: string;
-  email: string;
-  password: string;
-  first_name?: string;
-  last_name?: string;
-}) {
+export async function register(userData: RegisterRequest) {
   try {
     const res = await authClient.post(`/auth/register`, userData);
     return res.data;
@@ -80,7 +75,7 @@ export async function logout() {
 
 export async function forgotPassword(email: string) {
   try {
-    const res = await authClient.post(`/auth/forgot-password`, { email });
+    const res = await authClient.post(`/auth/forgot-password`, { email } as ForgotPasswordRequest);
     return res.data;
   } catch (error: any) {
     const errorData = error.response?.data;
@@ -93,7 +88,7 @@ export async function forgotPassword(email: string) {
 
 export async function verifyOTP(email: string, otp: string) {
   try {
-    const res = await authClient.post(`/auth/verify-otp`, { email, otp });
+    const res = await authClient.post(`/auth/verify-otp`, { email, otp } as VerifyOTPRequest);
     return res.data;
   } catch (error: any) {
     const errorData = error.response?.data;
@@ -110,7 +105,7 @@ export async function resetPassword(email: string, otp: string, newPassword: str
       email,
       otp,
       new_password: newPassword,
-    });
+    } as ResetPasswordRequest);
     return res.data;
   } catch (error: any) {
     const errorData = error.response?.data;

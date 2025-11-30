@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Spin, Tag, Button } from "antd";
+import { FileTextOutlined } from "@ant-design/icons";
 import { useGetRoleById } from "@/hooks/queries/role/useGetRoleById";
 import HeaderInformation from "@/components/common/HeaderInformation";
 import { MainContainer } from "@/components/layout/MainContainer.styles";
@@ -46,6 +47,7 @@ const DetailRole: React.FC = () => {
           { label: role.name || role.code },
         ]}
         title={role.name || role.code}
+        icon={<FileTextOutlined />}
         description={
           <div style={{ display: "flex", gap: 20, marginTop: 15, flexWrap: "wrap" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4 }}>

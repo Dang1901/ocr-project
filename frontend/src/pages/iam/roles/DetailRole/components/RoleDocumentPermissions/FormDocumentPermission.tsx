@@ -1,12 +1,7 @@
-import React, { useEffect } from "react";
-import { Form, Checkbox, Button, Space, Select } from "antd";
-
-const DOCUMENT_TYPES = [
-  { code: "bao_cao_tai_chinh", name: "Báo cáo tài chính" },
-  { code: "luong", name: "Lương" },
-  { code: "ke_hoach", name: "Kế hoạch" },
-  { code: "nhan_su", name: "Nhân sự" },
-];
+import React, { useEffect, useMemo } from "react";
+import { Form, Checkbox, Button, Space, Select, Spin } from "antd";
+import { useDepartmentTypes } from "@/hooks/queries/department/useDepartmentTypes";
+import type { DepartmentType } from "@/types/department.types";
 
 type Props = {
   mode: "create" | "update";
@@ -31,6 +26,20 @@ const FormDocumentPermission: React.FC<Props> = ({
   loading = false,
 }) => {
   const [form] = Form.useForm();
+
+  // Fetch document types from API (department types)
+  const { data: documentTypes, isLoading: isLoadingTypes } = useDepartmentTypes(
+    { page: 1, pageSize: 100 }, // Get all types
+    true
+  );
+
+  // Map document types to options for Select
+  const documentTypeOptions = useMemo(() => {
+    return documentTypes.map((type: DepartmentType) => ({
+      label: type.name,
+      value: type.code,
+    }));
+  }, [documentTypes]);
 
   useEffect(() => {
     if (initialValues) {
@@ -73,12 +82,11 @@ const FormDocumentPermission: React.FC<Props> = ({
         rules={[{ required: true, message: "Please select a document type" }]}
       >
         <Select
-          placeholder="Select document type"
-          disabled={mode === "update"}
-          options={DOCUMENT_TYPES.map((type) => ({
-            label: type.name,
-            value: type.code,
-          }))}
+          placeholder={isLoadingTypes ? "Loading..." : "Select document type"}
+          disabled={mode === "update" || isLoadingTypes}
+          loading={isLoadingTypes}
+          options={documentTypeOptions}
+          notFoundContent={isLoadingTypes ? <Spin size="small" /> : "No document types found"}
         />
       </Form.Item>
 

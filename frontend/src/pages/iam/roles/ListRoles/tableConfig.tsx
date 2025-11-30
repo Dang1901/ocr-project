@@ -1,4 +1,4 @@
-import type { Role } from "@/api/role.api";
+import type { Role } from "@/types/role.types";
 import type { ColumnsType } from "antd/es/table";
 import { Button, Dropdown } from "antd";
 import { IconDotsVertical, IconEdit, IconTrash } from "@tabler/icons-react";

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { DocumentPermissionAPI, type DocumentPermissionListResponse } from '@/api/document-permission.api';
+import { DocumentPermissionAPI } from '@/api/document-permission.api';
+import type { DocumentPermissionListResponse } from '@/types/document-permission.types';
 
 interface UseDocumentPermissionsParams {
   q?: string;

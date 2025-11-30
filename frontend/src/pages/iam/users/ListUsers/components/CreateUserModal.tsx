@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, Form, Input, Button } from 'antd';
 import { useCreateUser } from '@/hooks/mutations/user/useCreateUser';
-import type { CreateUserRequest } from '@/api/user.api';
+import type { CreateUserRequest } from '@/types/user.types';
 import { colors } from '@config/colors';
 
 interface CreateUserModalProps {

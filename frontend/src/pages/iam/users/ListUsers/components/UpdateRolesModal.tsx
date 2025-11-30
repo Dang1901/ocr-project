@@ -3,7 +3,7 @@ import { Modal, Table, Button, message, Spin, Checkbox, Space, Typography } from
 import { useGetRoles } from "@/hooks/queries/role/useGetRoles";
 import { useGetUserRoles } from "@/hooks/queries/user/useGetUserRoles";
 import { useUpdateRoles } from "@/hooks/mutations/user/useUpdateRoles";
-import type { User } from "@/api/user.api";
+import type { User } from "@/types/user.types";
 import { usePagination } from "@/hooks/common/usePagination";
 
 const { Text } = Typography;

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { roleApi, type RoleListResponse } from '@/api/role.api';
+import { roleApi } from '@/api/role.api';
+import type { RoleListResponse } from '@/types/role.types';
 
 interface UseGetRolesParams {
   q?: string;

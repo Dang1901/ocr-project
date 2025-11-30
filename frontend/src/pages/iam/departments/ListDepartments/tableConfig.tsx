@@ -2,7 +2,7 @@ import type { ColumnsType } from "antd/es/table";
 import { Button, Dropdown } from "antd";
 import { IconDotsVertical, IconEdit, IconTrash } from "@tabler/icons-react";
 import type { MenuProps } from "antd";
-import type { Department } from "@/api/department.api";
+import type { Department } from "@/types/department.types";
 import { hasPermission } from "@/hooks/common/useGetUserPermissions";
 
 interface DepartmentColumnProps {

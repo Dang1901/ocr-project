@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { roleApi, type RolePayload, type Role } from '@/api/role.api';
+import { roleApi } from '@/api/role.api';
+import type { RolePayload, Role } from '@/types/role.types';
 import { useAppDispatch } from '@/store';
 import { addToast, createToast } from '@/store/slices/toast_slice';
 

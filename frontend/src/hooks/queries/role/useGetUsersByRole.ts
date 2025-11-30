@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { httpClient } from '@/api/httpClient';
 import type { APIResponse } from '@/api/httpClient';
-import type { UserListResponse } from '@/api/user.api';
+import type { UserListResponse } from '@/types/user.types';
 
 interface UseGetUsersByRoleParams {
   roleId: string;

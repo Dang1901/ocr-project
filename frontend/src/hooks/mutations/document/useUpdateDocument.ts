@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { documentApi, type DocumentUpdatePayload } from '@/api/document.api';
+import { documentApi } from '@/api/document.api';
+import type { DocumentUpdatePayload } from '@/types/document.types';
 import { useAppDispatch } from '@/store';
 import { addToast, createToast } from '@/store/slices/toast_slice';
 

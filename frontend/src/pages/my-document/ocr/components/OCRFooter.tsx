@@ -28,12 +28,10 @@ const OCRFooterComponent: React.FC<OCRFooterProps> = ({
             : '#e2e8f0',
           transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
           height: '4px',
-          borderRadius: '2px',
         }}
         railStyle={{
           backgroundColor: '#e2e8f0',
           height: '4px',
-          borderRadius: '2px',
         }}
         handleStyle={{ 
           display: 'none', // Hide the handle

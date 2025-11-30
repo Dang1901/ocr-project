@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Table, Pagination, Button, Modal } from "antd";
-import { ReloadOutlined, PlusOutlined } from "@ant-design/icons";
+import { ReloadOutlined, PlusOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import { colors } from "@config/colors";
 import { usePagination } from "@/hooks/common/usePagination";
 import { useDebounce } from "@/hooks/common/useDebounce";
@@ -15,7 +15,7 @@ import { MainContainer, FilterContainer } from "@/components/layout/MainContaine
 import CreateRoleModal from "./components/CreateRoleModal";
 import EditRoleModal from "./components/EditRoleModal";
 import { useDeleteRole } from "@/hooks/mutations/role/useDeleteRole";
-import type { Role } from "@/api/role.api";
+import type { Role } from "@/types/role.types";
 
 const ListRoles: React.FC = () => {
   const { page, pageSize, setPage, setPageSize } = usePagination(1, 10);
@@ -114,6 +114,7 @@ const ListRoles: React.FC = () => {
             ]}
             title="Role Management"
             description="Manage roles and their permissions"
+            icon={<UnorderedListOutlined />}
         action={
           <div style={{ display: 'flex', gap: 8 }}>
             <Button

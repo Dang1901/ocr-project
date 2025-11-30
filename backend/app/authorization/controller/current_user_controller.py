@@ -74,7 +74,7 @@ def get_current_user_permissions(
     if not role_codes:
         # Nếu không có roles, return empty permissions
         ui_features = [
-            "DASHBOARD", "USER", "ROLE", "FEATURE", "PERMISSION", "DEPARTMENT", "DOCUMENT", "DOCUMENT_PERMISSION",
+            "DASHBOARD", "USER", "ROLE", "FEATURE", "PERMISSION", "DEPARTMENT", "DOCUMENT", "DOCUMENT_PERMISSION", "OCR", "ACTIVITY_LOG",
         ]
         return {feature: [] for feature in ui_features}
     
@@ -88,7 +88,7 @@ def get_current_user_permissions(
     
     # Chỉ return permissions cho UI features
     ui_features = [
-        "DASHBOARD", "USER", "ROLE", "FEATURE", "PERMISSION", "DEPARTMENT", "DOCUMENT", "DOCUMENT_PERMISSION",
+        "DASHBOARD", "USER", "ROLE", "FEATURE", "PERMISSION", "DEPARTMENT", "DOCUMENT", "DOCUMENT_PERMISSION", "OCR", "ACTIVITY_LOG",
     ]
     
     ui_permissions = {}

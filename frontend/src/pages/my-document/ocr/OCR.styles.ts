@@ -61,7 +61,6 @@ export const PDFViewerPanel = styled.div`
   height: 100%;
   min-height: 500px;
   border: 2px solid #e2e8f0;
-  border-radius: 12px;
   background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
   padding: 32px;
   display: flex;
@@ -103,7 +102,6 @@ export const ConvertButton = styled(Button)`
   height: 50px;
   min-width: 100px;
   border: 2px solid ${colors.textPrimary};
-  border-radius: 8px;
   background: linear-gradient(135deg, ${colors.textPrimary} 0%, ${colors.primaryLight} 100%);
   color: ${colors.white};
   font-size: 16px;
@@ -160,7 +158,6 @@ export const ExtractedDataPanel = styled.div`
   height: 100%;
   min-height: 500px;
   border: 2px solid #e2e8f0;
-  border-radius: 12px;
   background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
   padding: 32px;
   display: flex;
@@ -203,7 +200,6 @@ export const OCRFooter = styled.div`
   gap: 20px;
   padding: 20px;
   background: #ffffff;
-  border-radius: 12px;
   border: 2px solid #e2e8f0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;

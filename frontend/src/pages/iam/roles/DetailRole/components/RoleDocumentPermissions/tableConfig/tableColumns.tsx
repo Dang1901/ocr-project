@@ -1,5 +1,5 @@
 import { Tag, Checkbox } from "antd";
-import { IconEdit, IconX, IconCheck } from "@tabler/icons-react";
+import { IconEdit, IconX, IconCheck, IconPlus } from "@tabler/icons-react";
 import { colors } from "@config/colors";
 
 const DOCUMENT_TYPES = [
@@ -19,6 +19,7 @@ export const documentPermissionColumns = (
   changeEnableEdit: () => void,
   handleSave: () => void,
   handleCancel: () => void,
+  handleAdd: () => void,
   enableEdit: boolean,
   canEditPermissions: boolean,
   saving: boolean
@@ -109,7 +110,7 @@ export const documentPermissionColumns = (
             {enableEdit ? (
               <>
                 <Tag
-                  color={colors.error}
+                  color="#ffd0d5"
                   style={{
                     fontSize: "12px",
                     margin: 0,
@@ -155,25 +156,46 @@ export const documentPermissionColumns = (
                 </Tag>
               </>
             ) : (
-              <Tag
-                color={colors.textPrimary}
-                style={{
-                  fontSize: "12px",
-                  margin: 0,
-                  width: "fit-content",
-                  fontWeight: "500",
-                  display: "flex",
-                  color: colors.white,
-                  alignItems: "center",
-                  gap: "4px",
-                  height: "24px",
-                  cursor: "pointer",
-                }}
-                onClick={changeEnableEdit}
-              >
-                <IconEdit size={16} />
-                <span>Edit</span>
-              </Tag>
+              <>
+                <Tag
+                  color={colors.primary}
+                  style={{
+                    fontSize: "12px",
+                    margin: 0,
+                    width: "fit-content",
+                    fontWeight: "500",
+                    display: "flex",
+                    color: colors.white,
+                    alignItems: "center",
+                    gap: "4px",
+                    height: "24px",
+                    cursor: "pointer",
+                  }}
+                  onClick={handleAdd}
+                >
+                  <IconPlus size={16} />
+                  <span>Add</span>
+                </Tag>
+                <Tag
+                  color={colors.textPrimary}
+                  style={{
+                    fontSize: "12px",
+                    margin: 0,
+                    width: "fit-content",
+                    fontWeight: "500",
+                    display: "flex",
+                    color: colors.white,
+                    alignItems: "center",
+                    gap: "4px",
+                    height: "24px",
+                    cursor: "pointer",
+                  }}
+                  onClick={changeEnableEdit}
+                >
+                  <IconEdit size={16} />
+                  <span>Edit</span>
+                </Tag>
+              </>
             )}
           </>
         )}

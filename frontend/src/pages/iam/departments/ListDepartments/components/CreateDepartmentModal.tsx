@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Modal, Form, Input } from 'antd';
 import { useCreateDepartment } from '@/hooks/mutations/department/useCreateDepartment';
-import type { DepartmentBase } from '@/api/department.api';
+import type { DepartmentBase } from '@/types/department.types';
 
 interface CreateDepartmentModalProps {
   open: boolean;

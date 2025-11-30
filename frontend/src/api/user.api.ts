@@ -1,48 +1,16 @@
 import { httpClient } from './httpClient';
 import type { APIResponse } from './httpClient';
-
-export interface User {
-  id: string;
-  username: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  status?: string;
-  roles?: Array<{ id: string; name: string; code: string }>;
-}
-
-export interface UserListResponse {
-  items: User[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
-export interface UserRoleAssignment {
-  user_id: string;
-  role_ids: string[];
-}
-
-export interface UserRoleRemoval {
-  user_id: string;
-  role_ids: string[];
-}
-
-export interface CreateUserRequest {
-  username: string;
-  email: string;
-  password: string;
-  first_name?: string;
-  last_name?: string;
-}
-
-export interface ToggleUserStatusRequest {
-  is_active: boolean;
-}
+import type {
+  User,
+  UserListResponse,
+  UserRoleAssignment,
+  UserRoleRemoval,
+  CreateUserRequest,
+} from '../types/user.types';
 
 
 export const userApi = {
-  
+
   getUsers: async (params?: {
     q?: string;
     page?: number;

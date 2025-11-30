@@ -49,7 +49,7 @@ def check_casbin_permission(
     except HTTPException:
         raise
     except Exception as e:
-        # Log error nếu cần
-        print(f"Error checking permission: {e}")
+        # Log error nếu cần (chỉ log khi thực sự có lỗi, không phải permission denied)
+        # print(f"Error checking permission: {e}")
         raise HTTPException(status_code=403, detail="Permission denied")
 

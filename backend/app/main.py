@@ -123,12 +123,12 @@ app.include_router(ocr.router, prefix="/api/v1", tags=["OCR"])
 app.include_router(activity_log.router, prefix="/api/v1", tags=["ACTIVITY_LOG"])
 
 # Sync feature operations từ API routes (sau khi tất cả routers đã được include)
-print("🔄 Syncing feature operations...")
-try:
-    count = sync_feature_operations(app)
-    print(f"✅ Synced {count} feature operations")
-except Exception as e:
-    print(f"⚠️  Warning: Failed to sync feature operations: {e}")
+# print("🔄 Syncing feature operations...")
+# try:
+#     count = sync_feature_operations(app)
+#     print(f"✅ Synced {count} feature operations")
+# except Exception as e:
+#     print(f"⚠️  Warning: Failed to sync feature operations: {e}")
 
 
 @app.get("/", tags=["root"])

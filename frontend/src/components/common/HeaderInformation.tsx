@@ -68,7 +68,11 @@ export default function HeaderInformation({
 
           {/* Title + Icon */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {icon}
+            {icon && (
+              <span style={{ fontSize: '20px', color: colors.textPrimary, display: 'flex', alignItems: 'center', lineHeight: 1 }}>
+                {icon}
+              </span>
+            )}
             <Title level={4} style={{ margin: 0, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {title}
             </Title>

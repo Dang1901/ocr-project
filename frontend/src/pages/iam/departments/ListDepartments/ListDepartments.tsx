@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Table, Pagination, Button, Modal } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import { colors } from "@config/colors";
 import { usePagination } from "@/hooks/common/usePagination";
 import { useDebounce } from "@/hooks/common/useDebounce";
@@ -15,7 +15,7 @@ import { MainContainer, FilterContainer } from "@/components/layout/MainContaine
 import { buildDepartmentColumns } from "./tableConfig";
 import CreateDepartmentModal from "./components/CreateDepartmentModal";
 import EditDepartmentModal from "./components/EditDepartmentModal";
-import type { Department } from "@/api/department.api";
+import type { Department } from "@/types/department.types";
 
 const ListDepartments: React.FC = () => {
   const { page, pageSize, setPage, setPageSize } = usePagination(1, 10);
@@ -116,6 +116,7 @@ const ListDepartments: React.FC = () => {
             ]}
             title="Department Management"
             description="Manage departments and organizational structure"
+            icon={<UnorderedListOutlined />}
         action={
           <Button
             type="primary"

@@ -23,7 +23,6 @@ const ExtractedData: React.FC<ExtractedDataProps> = ({ extractedData }) => {
             padding: '20px',
             backgroundColor: '#ffffff',
             border: '2px solid #f0f0f0',
-            borderRadius: '8px',
             maxHeight: 'calc(100% - 100px)',
             overflowY: 'auto',
             whiteSpace: 'pre-wrap',
@@ -51,7 +50,6 @@ const ExtractedData: React.FC<ExtractedDataProps> = ({ extractedData }) => {
             style={{
               width: '64px',
               height: '64px',
-              borderRadius: '50%',
               background: 'linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%)',
               display: 'flex',
               alignItems: 'center',

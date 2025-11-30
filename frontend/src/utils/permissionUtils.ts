@@ -1,87 +1,63 @@
 /**
- * Utility functions để check permission
+ * Permission check utilities
  */
+import { hasPermission as checkPermissionFromHook } from '@/hooks/common/useGetUserPermissions';
 
 export interface PermissionCheckResult {
-  hasPermission: boolean;
   isPermissionDenied: boolean;
   errorMessage?: string;
 }
 
-/**
- * Check permission từ error object
- */
+export function checkPermission(
+  permissions: { [featureCode: string]: string[] } | undefined,
+  featureCode: string,
+  operation: string
+): boolean {
+  if (!permissions) return false;
+  return checkPermissionFromHook(permissions, featureCode, operation);
+}
+
+export function hasPermission(
+  permissions: { [featureCode: string]: string[] } | undefined,
+  featureCode: string,
+  operation: string
+): boolean {
+  return checkPermission(permissions, featureCode, operation);
+}
+
 export function checkPermissionFromError(error: any, fallbackMessage = "You don't have permission to access this resource"): PermissionCheckResult {
   if (!error) {
-    return { hasPermission: true, isPermissionDenied: false };
+    return { isPermissionDenied: false };
   }
 
-  // Check error từ React Query (có thể là APIResponse với error field)
-  const errorMessage = error?.error || error?.message;
-  const errorStatus = error?.response?.status || error?.status;
-  
-  const isPermissionDenied = 
-    errorMessage?.includes("Access denied") || 
-    errorMessage?.includes("Permission denied") ||
-    errorMessage?.includes("do not have permission") ||
-    errorStatus === 403;
-
-  return {
-    hasPermission: !isPermissionDenied,
-    isPermissionDenied,
-    errorMessage: errorMessage || fallbackMessage
-  };
-}
-
-/**
- * Check permission từ multiple errors
- */
-export function checkMultiplePermissions(errors: any[], fallbackMessage = "You don't have permission to access this resource"): PermissionCheckResult {
-  const results = errors.map(error => checkPermissionFromError(error, fallbackMessage));
-  
-  const hasAllPermissions = results.every(result => result.hasPermission);
-  const hasAnyPermissionDenied = results.some(result => result.isPermissionDenied);
-  
-  return {
-    hasPermission: hasAllPermissions,
-    isPermissionDenied: hasAnyPermissionDenied,
-    results,
-    errorMessage: results.find(r => r.isPermissionDenied)?.errorMessage || fallbackMessage
-  };
-}
-
-/**
- * Check permission từ API response
- */
-export function checkPermissionFromResponse(response: any, fallbackMessage = "You don't have permission to access this resource"): PermissionCheckResult {
-  // Check nếu response có error
-  if (response?.error) {
-    return checkPermissionFromError(response.error, fallbackMessage);
-  }
-
-  // Check nếu response có status 403
-  if (response?.status === 403) {
+  // Check for 403 status
+  if (error?.status === 403 || error?.statusCode === 403) {
     return {
-      hasPermission: false,
       isPermissionDenied: true,
-      errorMessage: response?.message || fallbackMessage
+      errorMessage: error?.message || error?.error || fallbackMessage
     };
   }
 
-  return { hasPermission: true, isPermissionDenied: false };
+  // Check for permission-related error messages
+  const errorMessage = error?.message || error?.error || '';
+  if (errorMessage.toLowerCase().includes('permission') || 
+      errorMessage.toLowerCase().includes('forbidden') ||
+      errorMessage.toLowerCase().includes('access denied')) {
+    return {
+      isPermissionDenied: true,
+      errorMessage: errorMessage || fallbackMessage
+    };
+  }
+
+  return { isPermissionDenied: false };
 }
 
-/**
- * Tạo permission check function cho specific feature/operation
- */
-export function createPermissionChecker(feature: string, operation: string) {
-  return (error: any) => {
-    const result = checkPermissionFromError(error);
-    return {
-      ...result,
-      feature,
-      operation,
-      context: `${feature}:${operation}`
-    };
-  };
+export function checkMultiplePermissions(errors: any[], fallbackMessage = "You don't have permission to access this resource"): PermissionCheckResult {
+  for (const error of errors) {
+    const result = checkPermissionFromError(error, fallbackMessage);
+    if (result.isPermissionDenied) {
+      return result;
+    }
+  }
+  return { isPermissionDenied: false };
 }

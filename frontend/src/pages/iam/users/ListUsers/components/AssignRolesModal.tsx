@@ -4,7 +4,7 @@ import { useGetRoles } from "@/hooks/queries/role/useGetRoles";
 import { useGetUserRoles } from "@/hooks/queries/user/useGetUserRoles";
 import { useAssignRoles } from "@/hooks/mutations/user/useAssignRoles";
 import { usePagination } from "@/hooks/common/usePagination";
-import type { User } from "@/api/user.api";
+import type { User } from "@/types/user.types";
 
 const { Text } = Typography;
 

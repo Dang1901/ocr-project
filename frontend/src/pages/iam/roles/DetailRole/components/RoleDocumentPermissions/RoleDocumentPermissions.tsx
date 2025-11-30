@@ -6,13 +6,9 @@ import { documentPermissionColumns } from "./tableConfig";
 import { useCreateDocumentPermission } from "@/hooks/mutations/document-permission/useCreateDocumentPermission";
 import { useUpdateDocumentPermission } from "@/hooks/mutations/document-permission/useUpdateDocumentPermission";
 import { useDeleteDocumentPermission } from "@/hooks/mutations/document-permission/useDeleteDocumentPermission";
-
-const DOCUMENT_TYPES = [
-  { code: "bao_cao_tai_chinh", name: "Báo cáo tài chính" },
-  { code: "luong", name: "Lương" },
-  { code: "ke_hoach", name: "Kế hoạch" },
-  { code: "nhan_su", name: "Nhân sự" },
-];
+import { useGetUserPermissions, hasPermission as checkPermission } from "@/hooks/common/useGetUserPermissions";
+import type { DocumentPermission } from "@/types/document-permission.types";
+import CreateDocumentPermission from "./CreateDocumentPermission";
 
 interface RoleDocumentPermissionsProps {
   roleCode: string;
@@ -32,17 +28,21 @@ const RoleDocumentPermissions: React.FC<RoleDocumentPermissionsProps> = ({
   const [enableEdit, setEnableEdit] = useState(false);
   const [localData, setLocalData] = useState<DocumentPermissionData[]>([]);
   const [saving, setSaving] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Fetch role document permissions
   const {
     items: documentPermissions,
     isLoading: permissionsLoading,
     refetch,
-  } = useDocumentPermissions({
-    role_code: roleCode,
-    page: 1,
-    pageSize: 100,
-  });
+  } = useDocumentPermissions(
+    {
+      role_code: roleCode,
+      page: 1,
+      pageSize: 100,
+    },
+    !!roleCode // Only enable query when roleCode is available
+  );
 
   const createMutation = useCreateDocumentPermission({
     showToast: true,
@@ -56,36 +56,27 @@ const RoleDocumentPermissions: React.FC<RoleDocumentPermissionsProps> = ({
     showToast: true,
   });
 
-  // Merge document types with existing permissions
-  const mergedData = useMemo(() => {
-    const data: DocumentPermissionData[] = DOCUMENT_TYPES.map((docType) => {
-      const existing = documentPermissions?.find(
-        (p: any) => p.document_type === docType.code
-      );
-      return existing
-        ? {
-            id: existing.id,
-            document_type: docType.code,
-            can_view: existing.can_view,
-            can_edit: existing.can_edit,
-            can_delete: existing.can_delete,
-          }
-        : {
-            document_type: docType.code,
-            can_view: false,
-            can_edit: false,
-            can_delete: false,
-          };
-    });
-    return data;
+  // Transform document permissions data
+  const mergedData = useMemo((): DocumentPermissionData[] => {
+    if (!documentPermissions || documentPermissions.length === 0) {
+      return [];
+    }
+
+    return documentPermissions.map((p: DocumentPermission): DocumentPermissionData => ({
+      id: p.id,
+      document_type: p.document_type,
+      can_view: p.can_view,
+      can_edit: p.can_edit,
+      can_delete: p.can_delete,
+    }));
   }, [documentPermissions]);
 
   // Initialize local data when permissions are loaded
   useEffect(() => {
-    if (documentPermissions) {
+    if (!permissionsLoading && mergedData.length > 0) {
       setLocalData(mergedData);
     }
-  }, [documentPermissions, mergedData]);
+  }, [mergedData, permissionsLoading]);
 
   const handleCheckboxChange = (
     documentType: string,
@@ -173,7 +164,23 @@ const RoleDocumentPermissions: React.FC<RoleDocumentPermissionsProps> = ({
     setEnableEdit(false);
   };
 
-  const canEditPermissions = true; // TODO: Add permission check
+  const handleAdd = () => {
+    setIsAddModalOpen(true);
+  };
+
+  const handleAddSuccess = () => {
+    setIsAddModalOpen(false);
+    refetch();
+  };
+
+  const handleAddCancel = () => {
+    setIsAddModalOpen(false);
+  };
+
+  // Check permission to edit document permissions
+  const { permissions } = useGetUserPermissions();
+  const canEditPermissions = checkPermission(permissions, "DOCUMENT_PERMISSION", "update_document_permission") || 
+                            checkPermission(permissions, "DOCUMENT_PERMISSION", "create_document_permission");
 
   return (
     <>
@@ -183,6 +190,7 @@ const RoleDocumentPermissions: React.FC<RoleDocumentPermissionsProps> = ({
           () => setEnableEdit(!enableEdit),
           handleSave,
           handleCancel,
+          handleAdd,
           enableEdit,
           canEditPermissions,
           saving
@@ -202,6 +210,12 @@ const RoleDocumentPermissions: React.FC<RoleDocumentPermissionsProps> = ({
         }}
         scroll={{ y: "100%" }}
         tableLayout="auto"
+      />
+      <CreateDocumentPermission
+        open={isAddModalOpen}
+        onCancel={handleAddCancel}
+        onSuccess={handleAddSuccess}
+        roleCode={roleCode}
       />
     </>
   );

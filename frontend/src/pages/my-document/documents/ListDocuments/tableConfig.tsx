@@ -3,7 +3,7 @@ import { Button, Dropdown } from "antd";
 import { IconDotsVertical, IconEdit, IconTrash } from "@tabler/icons-react";
 import type { MenuProps } from "antd";
 import { Link } from "react-router-dom";
-import type { Document } from "@/api/document.api";
+import type { Document } from "@/types/document.types";
 import { hasPermission } from "@/hooks/common/useGetUserPermissions";
 
 interface DocumentColumnProps {
@@ -57,7 +57,7 @@ export const buildDocumentColumns = ({
       width: 250,
       render: (filename: string, record: Document) => (
         <Link 
-          to={`/documents/${record.id}`}
+          to={`/ocr/documents/${record.id}/result`}
           style={{ fontWeight: 500, fontSize: "14px", color: "#1890ff" }}
         >
           {filename}

@@ -9,11 +9,12 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import get_db
-from app.authentication.dependencies import require_session
+from app.authentication.dependencies import require_session, get_current_user
 from app.authorization.utils import check_casbin_permission
 from app.models.document import Document as DocumentModel
 from app.models.department import Department as DepartmentModel
 from app.models.user import User as UserModel
+from app.services.document_service import DocumentService
 from app.services.document_permission_service import DocumentPermissionService
 from app.core.config import settings
 from app.schemas.document import (
@@ -44,127 +45,37 @@ def list_documents(
     # Check permission
     check_casbin_permission(request, "DOCUMENT", "list_documents")
     
-    # Get current user from session
-    username = request.session.get("username") or request.session.get("email")
-    if not username:
-        raise HTTPException(status_code=401, detail="User not authenticated")
+    # Get current user
+    user = get_current_user(request, db, require_roles=True)
     
-    # Get user from database with roles
-    user = (
-        db.query(UserModel)
-        .options(joinedload(UserModel.roles))
-        .filter(UserModel.username == username)
-        .first()
+    # Use service layer
+    document_service = DocumentService(db)
+    return document_service.list_documents(
+        user=user,
+        q=q,
+        department_id=department_id,
+        document_type=document_type,
+        status=status,
+        page=page,
+        page_size=page_size
     )
-    if not user:
-        # Try email
-        user = (
-            db.query(UserModel)
-            .options(joinedload(UserModel.roles))
-            .filter(UserModel.email == username)
-            .first()
-        )
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    
-    # Initialize permission service
-    permission_service = DocumentPermissionService(db)
-    
-    # Query all documents
-    query = db.query(DocumentModel).options(joinedload(DocumentModel.department))
-    
-    if q:
-        like = f"%{q}%"
-        query = query.filter(
-            or_(
-                DocumentModel.filename.ilike(like),
-                DocumentModel.document_type.ilike(like),
-            )
-        )
-    
-    if department_id:
-        query = query.filter(DocumentModel.department_id == department_id)
-    
-    if document_type:
-        query = query.filter(DocumentModel.document_type == document_type)
-    
-    if status:
-        query = query.filter(DocumentModel.status == status)
-
-    # Get all documents first
-    all_documents = query.order_by(DocumentModel.created_at.desc()).all()
-    
-    # Filter documents by permission
-    filtered_documents = [
-        doc for doc in all_documents
-        if permission_service.can_view_document(user, doc)
-    ]
-    
-    # Calculate pagination
-    total = len(filtered_documents)
-    start = (page - 1) * page_size
-    end = start + page_size
-    items = filtered_documents[start:end]
-
-    return {
-        "items": items,
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-    }
 
 
 @router.get("/documents/{document_id}", response_model=DocumentSchema, name="get_document")
 def get_document(
     document_id: str,
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     # Check permission
     check_casbin_permission(request, "DOCUMENT", "get_document")
     
-    # Get document
-    document = (
-        db.query(DocumentModel)
-        .options(joinedload(DocumentModel.department))
-        .filter(DocumentModel.id == document_id)
-        .first()
-    )
-    if not document:
-        raise HTTPException(status_code=404, detail="Document not found")
+    # Get current user
+    user = get_current_user(request, db, require_roles=True)
     
-    # Get current user from session
-    username = request.session.get("username") or request.session.get("email")
-    if not username:
-        raise HTTPException(status_code=401, detail="User not authenticated")
-    
-    # Get user from database with roles
-    user = (
-        db.query(UserModel)
-        .options(joinedload(UserModel.roles))
-        .filter(UserModel.username == username)
-        .first()
-    )
-    if not user:
-        # Try email
-        user = (
-            db.query(UserModel)
-            .options(joinedload(UserModel.roles))
-            .filter(UserModel.email == username)
-            .first()
-        )
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    
-    # Check if user can view this document
-    permission_service = DocumentPermissionService(db)
-    if not permission_service.can_view_document(user, document):
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to view this document"
-        )
-    
-    return document
+    # Use service layer
+    document_service = DocumentService(db)
+    return document_service.get_document(user=user, document_id=document_id)
 
 
 def _validate_department(db: Session, department_id: Optional[str]) -> Optional[DepartmentModel]:
@@ -207,22 +118,9 @@ async def create_document(
     if not document_type:
         raise HTTPException(status_code=400, detail="Document type is required")
     
-    # Get current user from session
-    user_id = request.session.get("user_id")
-    username = request.session.get("username") or request.session.get("email")
-    
-    # Validate username exists in database if provided
-    if username:
-        from app.models.user import User as UserModel
-        user = db.query(UserModel).filter(UserModel.username == username).first()
-        if not user:
-            # If username doesn't exist, try email
-            user = db.query(UserModel).filter(UserModel.email == username).first()
-            if user:
-                username = user.username
-            else:
-                # If still not found, set to None (will fail if foreign key constraint is strict)
-                username = None
+    # Get current user to ensure username is valid
+    user = get_current_user(request, db, require_roles=False)
+    username = user.username
     
     # Generate unique filename
     file_ext = Path(file.filename).suffix if file.filename else ""
@@ -281,51 +179,17 @@ def update_document(
     document_id: str,
     payload: DocumentUpdate,
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     # Check permission
     check_casbin_permission(request, "DOCUMENT", "update_document")
     
-    # Get document
-    document = (
-        db.query(DocumentModel)
-        .options(joinedload(DocumentModel.department))
-        .filter(DocumentModel.id == document_id)
-        .first()
-    )
-    if not document:
-        raise HTTPException(status_code=404, detail="Document not found")
+    # Get current user
+    user = get_current_user(request, db, require_roles=True)
     
-    # Get current user from session
-    username = request.session.get("username") or request.session.get("email")
-    if not username:
-        raise HTTPException(status_code=401, detail="User not authenticated")
-    
-    # Get user from database with roles
-    user = (
-        db.query(UserModel)
-        .options(joinedload(UserModel.roles))
-        .filter(UserModel.username == username)
-        .first()
-    )
-    if not user:
-        # Try email
-        user = (
-            db.query(UserModel)
-            .options(joinedload(UserModel.roles))
-            .filter(UserModel.email == username)
-            .first()
-        )
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    
-    # Check if user can edit this document
-    permission_service = DocumentPermissionService(db)
-    if not permission_service.can_edit_document(user, document):
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to edit this document"
-        )
+    # Use service layer to check permission
+    document_service = DocumentService(db)
+    document = document_service.check_edit_permission(user=user, document_id=document_id)
 
     if payload.filename is not None:
         document.filename = payload.filename
@@ -357,51 +221,17 @@ def update_document(
 def delete_document(
     document_id: str,
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     # Check permission
     check_casbin_permission(request, "DOCUMENT", "delete_document")
     
-    # Get document
-    document = (
-        db.query(DocumentModel)
-        .options(joinedload(DocumentModel.department))
-        .filter(DocumentModel.id == document_id)
-        .first()
-    )
-    if not document:
-        raise HTTPException(status_code=404, detail="Document not found")
+    # Get current user
+    user = get_current_user(request, db, require_roles=True)
     
-    # Get current user from session
-    username = request.session.get("username") or request.session.get("email")
-    if not username:
-        raise HTTPException(status_code=401, detail="User not authenticated")
-    
-    # Get user from database with roles
-    user = (
-        db.query(UserModel)
-        .options(joinedload(UserModel.roles))
-        .filter(UserModel.username == username)
-        .first()
-    )
-    if not user:
-        # Try email
-        user = (
-            db.query(UserModel)
-            .options(joinedload(UserModel.roles))
-            .filter(UserModel.email == username)
-            .first()
-        )
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    
-    # Check if user can delete this document
-    permission_service = DocumentPermissionService(db)
-    if not permission_service.can_delete_document(user, document):
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to delete this document"
-        )
+    # Use service layer to check permission
+    document_service = DocumentService(db)
+    document = document_service.check_delete_permission(user=user, document_id=document_id)
     
     db.delete(document)
     db.commit()

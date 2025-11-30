@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { departmentApi, type DepartmentBase } from '@/api/department.api';
+import { departmentApi } from '@/api/department.api';
+import type { DepartmentBase } from '@/types/department.types';
 import { useAppDispatch } from '@/store';
 import { addToast, createToast } from '@/store/slices/toast_slice';
 

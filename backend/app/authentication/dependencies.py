@@ -1,63 +1,58 @@
-from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.core.security import verify_token
-from app.services.user_service import UserService
+from fastapi import HTTPException, Depends, Request
+from sqlalchemy.orm import Session, joinedload
+from app.db.session import get_db
+from app.models.user import User as UserModel
 
-security = HTTPBearer(auto_error=False)
 
-async def require_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Dependency to verify JWT token"""
-    token = credentials.credentials
-    payload = verify_token(token)
+def require_session(request: Request):
+    """
+    Dependency to require a valid session.
+    Checks if user has an active session.
+    """
+    if not request.session.get("username") and not request.session.get("email"):
+        raise HTTPException(status_code=401, detail="Session required")
+    return True
+
+
+def get_current_user(
+    request: Request,
+    db: Session = Depends(get_db),
+    require_roles: bool = True
+) -> UserModel:
+    """
+    Dependency to get the current authenticated user from session.
     
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid JWT token"
-        )
+    Args:
+        request: FastAPI Request object
+        db: Database session
+        require_roles: If True, load user roles (default: True)
     
-    user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid JWT token"
-        )
+    Returns:
+        UserModel: The current authenticated user
+        
+    Raises:
+        HTTPException: 401 if user is not authenticated or not found
+    """
+    # Get username or email from session
+    username = request.session.get("username") or request.session.get("email")
+    if not username:
+        raise HTTPException(status_code=401, detail="User not authenticated")
     
-    # Get user info
-    user_service = UserService()
-    user = user_service.get_user_by_id(user_id)
+    # Build query
+    query = db.query(UserModel)
+    
+    # Load roles if required
+    if require_roles:
+        query = query.options(joinedload(UserModel.roles))
+    
+    # Try to find user by username first
+    user = query.filter(UserModel.username == username).first()
+    
+    # If not found, try email
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
-        )
+        user = query.filter(UserModel.email == username).first()
     
-    return {
-        "sub": user.id,
-        "email": user.email,
-        "preferred_username": user.username or user.email,
-    }
-
-async def require_session(request: Request):
-    """Dependency to verify user session (alternative to JWT token)"""
-    user_id = request.session.get("user_id")
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
-    
-    # Get user info
-    user_service = UserService()
-    user = user_service.get_user_by_id(user_id)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
-        )
+        raise HTTPException(status_code=401, detail="User not found")
     
-    return {
-        "sub": user.id,
-        "email": user.email,
-        "preferred_username": user.username or user.email,
-    }
+    return user

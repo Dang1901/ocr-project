@@ -1,21 +1,9 @@
 import { httpClient } from './httpClient';
 import type { APIResponse } from './httpClient';
-
-export interface Alert {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'warning' | 'error' | 'success';
-  created_at: string;
-  read: boolean;
-}
-
-export interface AlertListResponse {
-  items: Alert[];
-  total: number;
-  page: number;
-  page_size: number;
-}
+import type {
+  Alert,
+  AlertListResponse,
+} from '../types/alert.types';
 
 export const alertApi = {
   // Get paginated alerts

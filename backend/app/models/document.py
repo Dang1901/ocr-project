@@ -33,10 +33,11 @@ class Document(Base):
             self.filename = data.get("filename")
             self.file_path = data.get("file_path") or data.get("s3_path") # Support backward compatibility when creating
             self.department_id = data.get("department_id")
-            self.status = data.get("uploading")
+            self.status = data.get("status", "uploading")  # Fixed: was data.get("uploading")
             self.document_type = data.get("document_type")
             self.created_by = data.get("created_by")
             self.owner = data.get("owner")
+            self.total_pages = data.get("total_pages", 0)
             self.created_at = data.get("created_at")
             self.updated_at = data.get("updated_at")
             

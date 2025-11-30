@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { permissionApi, type CreatePermissionRequest } from '@/api/permission.api';
+import { permissionApi } from '@/api/permission.api';
+import type { CreatePermissionRequest } from '@/types/permission.types';
 import { useAppDispatch } from '@/store';
 import { addToast, createToast } from '@/store/slices/toast_slice';
 

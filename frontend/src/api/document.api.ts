@@ -1,40 +1,11 @@
 import { httpClient } from './httpClient';
 import type { APIResponse } from './httpClient';
-
-export interface DepartmentSummary {
-  id: string;
-  name: string;
-}
-
-export interface Document {
-  id: string;
-  filename: string;
-  file_path: string;
-  department_id?: string | null;
-  status?: string | null;
-  document_type?: string | null;
-  created_by?: string | null;
-  owner?: string | null;
-  created_at?: string | null;
-  department?: DepartmentSummary | null;
-}
-
-export interface DocumentListResponse {
-  items: Document[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
-export interface DocumentPayload {
-  filename: string;
-  file_path: string;
-  department_id?: string | null;
-  status?: string | null;
-  document_type?: string | null;
-}
-
-export type DocumentUpdatePayload = Partial<DocumentPayload>;
+import type {
+  Document,
+  DocumentListResponse,
+  DocumentUpdatePayload,
+  DocumentResult,
+} from '../types/document.types';
 
 export const documentApi = {
   getDocuments: async (params?: {
@@ -48,8 +19,8 @@ export const documentApi = {
     return httpClient.get('/documents', params);
   },
 
-  getDocument: async (documentId: string): Promise<APIResponse<Document>> => {
-    return httpClient.get(`/documents/${documentId}`);
+  getDocument: async (documentId: string): Promise<APIResponse<DocumentResult>> => {
+    return httpClient.get(`/ocr/documents/${documentId}/result`);
   },
 
   createDocument: async (formData: FormData): Promise<APIResponse<Document>> => {

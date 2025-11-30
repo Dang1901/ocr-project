@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "antd";
 import { useCreatePermissions } from "@/hooks/mutations/permission/useCreatePermissions";
 import { FormPermission } from "./FormPermission";
-import type { CreatePermissionRequest } from "@/api/permission.api";
+import type { CreatePermissionRequest } from "@/types/permission.types";
 
 interface CreatePermissionProps {
   open: boolean;

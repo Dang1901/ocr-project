@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo } from "react";
 import { Modal, Form, Input, InputNumber, Switch, Select } from "antd";
 import { useCreateRole } from "@/hooks/mutations/role/useCreateRole";
-import type { RolePayload } from "@/api/role.api";
+import type { RolePayload } from "@/types/role.types";
 import { useDepartments } from "@/hooks/queries/department/useDepartments";
-import type { Department } from "@/api/department.api";
+import type { Department } from "@/types/department.types";
 import { usePagination } from "@/hooks/common/usePagination";
 
 interface CreateRoleModalProps {

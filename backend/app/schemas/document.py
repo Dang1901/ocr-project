@@ -1,5 +1,5 @@
 from typing import List, Optional
-from datetime import date
+from datetime import date, datetime
 from pydantic import BaseModel
 
 
@@ -12,8 +12,8 @@ class DepartmentSummary(BaseModel):
 
 
 class DocumentBase(BaseModel):
-    filename: str
-    file_path: str
+    filename: Optional[str] = None
+    file_path: Optional[str] = None
     department_id: Optional[str] = None
     status: Optional[str] = None
     document_type: Optional[str] = None
@@ -31,11 +31,18 @@ class DocumentUpdate(BaseModel):
     document_type: Optional[str] = None
 
 
-class Document(DocumentBase):
+class Document(BaseModel):
     id: str
+    filename: Optional[str] = None
+    file_path: Optional[str] = None
+    department_id: Optional[str] = None
+    status: Optional[str] = None
+    document_type: Optional[str] = None
     created_by: Optional[str] = None
     owner: Optional[str] = None
-    created_at: Optional[date] = None
+    total_pages: Optional[int] = 0
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     department: Optional[DepartmentSummary] = None
 
     class Config:

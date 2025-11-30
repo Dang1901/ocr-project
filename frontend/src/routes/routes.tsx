@@ -84,7 +84,7 @@ export const protectedRoutes: RouteObject[] = [
         element: <ListDocuments />,
       },
       {
-        path: 'documents/:documentId',
+        path: 'ocr/documents/:documentId/result',
         element: <DetailDocument />,
       },
       // OCR route

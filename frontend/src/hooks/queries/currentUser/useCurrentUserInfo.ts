@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { currentUserApi, type CurrentUserInfo } from '@/api/currentUser.api';
+import { currentUserApi } from '@/api/currentUser.api';
+import type { CurrentUserInfo } from '@/types/currentUser.types';
 
 export const useCurrentUserInfo = (enabled: boolean = true) => {
   const query = useQuery({

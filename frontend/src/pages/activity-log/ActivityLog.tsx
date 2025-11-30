@@ -1,117 +1,61 @@
-import React, { useState, useMemo, useCallback } from "react";
-import { Table, Pagination, Button, Tag } from "antd";
-import { ReloadOutlined, DownloadOutlined } from "@ant-design/icons";
+import React, { useState, useMemo, useEffect } from "react";
+import { Table, Pagination, Button, Input, Spin } from "antd";
+import { ReloadOutlined, DownloadOutlined, HistoryOutlined } from "@ant-design/icons";
 import { colors } from "@config/colors";
 import { usePagination } from "@/hooks/common/usePagination";
 import { useDebounce } from "@/hooks/common/useDebounce";
 import { buildActivityLogColumns } from "./tableConfig";
 import HeaderInformation from "@components/common/HeaderInformation";
+import PermissionWarningBanner from "@/components/common/PermissionWarningBanner";
+import { useGetUserPermissions, hasPermission as checkPermission } from "@/hooks/common/useGetUserPermissions";
 import InputFilter from "@components/common/InputFilter";
-import type { ActivityLogType } from "@/types/types";
 import { MainContainer, FilterContainer } from "@/components/layout/MainContainer.styles";
 import { useAppDispatch } from "@/store";
 import { addToast, createToast } from "@/store/slices/toast_slice";
-
-// Mock data - will be replaced with actual API calls
-const mockActivityLogs: ActivityLogType[] = [
-  {
-    id: "1",
-    user_id: "1",
-    user_name: "John Doe",
-    action: "CREATE",
-    resource_type: "User",
-    resource_id: "5",
-    resource_name: "new.user@example.com",
-    status: "success",
-    ip_address: "192.168.1.100",
-    created_at: "2024-03-15T10:30:00Z",
-  },
-  {
-    id: "2",
-    user_id: "2",
-    user_name: "Jane Smith",
-    action: "UPDATE",
-    resource_type: "Role",
-    resource_id: "2",
-    resource_name: "Project Manager",
-    status: "success",
-    ip_address: "192.168.1.101",
-    created_at: "2024-03-15T09:20:00Z",
-  },
-  {
-    id: "3",
-    user_id: "1",
-    user_name: "John Doe",
-    action: "DELETE",
-    resource_type: "User",
-    resource_id: "3",
-    resource_name: "bob.johnson@example.com",
-    status: "success",
-    ip_address: "192.168.1.100",
-    created_at: "2024-03-15T08:15:00Z",
-  },
-  {
-    id: "4",
-    user_id: "3",
-    user_name: "Bob Johnson",
-    action: "LOGIN",
-    resource_type: "Auth",
-    status: "success",
-    ip_address: "192.168.1.102",
-    created_at: "2024-03-15T07:00:00Z",
-  },
-  {
-    id: "5",
-    user_id: "2",
-    user_name: "Jane Smith",
-    action: "CREATE",
-    resource_type: "Organization",
-    resource_id: "4",
-    resource_name: "Operations",
-    status: "failed",
-    ip_address: "192.168.1.101",
-    created_at: "2024-03-14T16:45:00Z",
-  },
-];
+import { useActivityLogs } from "@/hooks/queries/activity-log/useActivityLogs";
 
 const ActivityLog: React.FC = () => {
   const dispatch = useAppDispatch();
   const { page, pageSize, setPage, setPageSize } = usePagination(1, 10);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [userFilter, setUserFilter] = useState<string | undefined>();
+  const [statusFilter, setStatusFilter] = useState<number | undefined>();
 
   const debouncedSearch = useDebounce(searchQuery, 500);
 
-  // Filter logs based on search query
-  const filteredLogs = useMemo(() => {
-    if (!debouncedSearch) return mockActivityLogs;
-    const query = debouncedSearch.toLowerCase();
-    return mockActivityLogs.filter(
-      (log) =>
-        (log.user_name && log.user_name.toLowerCase().includes(query)) ||
-        log.action.toLowerCase().includes(query) ||
-        log.resource_type.toLowerCase().includes(query) ||
-        (log.resource_name && log.resource_name.toLowerCase().includes(query)) ||
-        (log.ip_address && log.ip_address.toLowerCase().includes(query))
-    );
-  }, [debouncedSearch]);
+  // Build API params
+  const apiParams = useMemo(() => {
+    const params: any = {
+      page: page - 1, // Backend uses 0-based indexing
+      size: pageSize,
+    };
 
-  // Paginate filtered logs
-  const paginatedLogs = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredLogs.slice(start, end);
-  }, [filteredLogs, page, pageSize]);
+    if (userFilter) {
+      params.user_id = userFilter;
+    }
 
-  const total = filteredLogs.length;
+    if (statusFilter) {
+      params.status = statusFilter;
+    }
+
+    if (debouncedSearch) {
+      params.path = debouncedSearch;
+    }
+
+    return params;
+  }, [page, pageSize, userFilter, statusFilter, debouncedSearch]);
+
+  // Get all user permissions
+  const { permissions, isLoading: isCheckingPermission } = useGetUserPermissions();
+  
+  // Check permission trước khi xem Activity Log
+  const hasGetPermission = checkPermission(permissions, "ACTIVITY_LOG", "get_activity_log");
+
+  const { data: activityLogs, total, isLoading, refetch } = useActivityLogs(apiParams, hasGetPermission);
 
   const handleRefresh = () => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      dispatch(addToast(createToast.success("Activity log refreshed")));
-    }, 1000);
+    refetch();
+    dispatch(addToast(createToast.success("Activity log refreshed")));
   };
 
   const handleExport = () => {
@@ -123,6 +67,35 @@ const ActivityLog: React.FC = () => {
     []
   );
 
+  // Reset to page 1 when filters change (but not on initial mount)
+  useEffect(() => {
+    if (page !== 1) {
+      setPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, userFilter, statusFilter]);
+
+  if (isCheckingPermission) {
+    return (
+      <MainContainer>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
+          <Spin size="large" />
+        </div>
+      </MainContainer>
+    );
+  }
+
+  // Show permission warning if no permission
+  if (!hasGetPermission) {
+    return (
+      <MainContainer>
+        <PermissionWarningBanner
+          message="You do not have sufficient permissions to view this page!"
+        />
+      </MainContainer>
+    );
+  }
+
   return (
     <MainContainer>
       <HeaderInformation
@@ -131,6 +104,7 @@ const ActivityLog: React.FC = () => {
         ]}
         title="Activity Log"
         description="View system activity and user actions"
+        icon={<HistoryOutlined />}
         action={
           <div style={{ display: 'flex', gap: 8 }}>
             <Button
@@ -143,7 +117,7 @@ const ActivityLog: React.FC = () => {
               type="primary"
               icon={<ReloadOutlined />}
               onClick={handleRefresh}
-              loading={loading}
+              loading={isLoading}
               style={{ background: colors.textPrimary, borderColor: colors.textPrimary }}
             >
               Refresh
@@ -153,30 +127,53 @@ const ActivityLog: React.FC = () => {
       />
       
       <FilterContainer>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, width: '100%', flexWrap: 'wrap' }}>
           <InputFilter
-            label="Quick search"
+            label="Search Path"
             value={searchQuery}
             onChange={(value) => {
               setSearchQuery(value);
-              if (value === "") {
-                setPage(1);
-              }
             }}
-            placeholder="Search by user, action, or resource"
+            placeholder="Search by path"
             width={300}
             onPressEnter={() => {
               setPage(1);
             }}
           />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: '12px', color: '#666' }}>User ID</label>
+            <Input
+              placeholder="Filter by user ID"
+              value={userFilter}
+              onChange={(e) => {
+                setUserFilter(e.target.value || undefined);
+              }}
+              style={{ width: 200 }}
+              allowClear
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: '12px', color: '#666' }}>Status Code</label>
+            <Input
+              type="number"
+              placeholder="Filter by status code"
+              value={statusFilter}
+              onChange={(e) => {
+                const value = e.target.value;
+                setStatusFilter(value ? parseInt(value, 10) : undefined);
+              }}
+              style={{ width: 150 }}
+              allowClear
+            />
+          </div>
         </div>
       </FilterContainer>
 
       <Table
         columns={columns}
-        dataSource={paginatedLogs}
+        dataSource={activityLogs}
         rowKey="id"
-        loading={loading}
+        loading={isLoading}
         pagination={false}
         style={{
           flex: 1,

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Table, Pagination, Button, Modal } from "antd";
-import { ReloadOutlined, PlusOutlined } from "@ant-design/icons";
+import { ReloadOutlined, PlusOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import { colors } from "@config/colors";
 import { usePagination } from "@/hooks/common/usePagination";
 import { useDebounce } from "@/hooks/common/useDebounce";
@@ -19,7 +19,7 @@ import CreateUserModal from "./components/CreateUserModal";
 import AssignRolesModal from "./components/AssignRolesModal";
 import RemoveRolesModal from "./components/RemoveRolesModal";
 import UpdateRolesModal from "./components/UpdateRolesModal";
-import type { User } from "@/api/user.api";
+import type { User } from "@/types/user.types";
 
 const ListUsers: React.FC = () => {
   const { page, pageSize, setPage, setPageSize } = usePagination(1, 10);
@@ -33,9 +33,11 @@ const ListUsers: React.FC = () => {
 
   // Get all user permissions
   const { permissions, isLoading: isCheckingPermission } = useGetUserPermissions();
-  
+
   // Check permission trước khi gọi API
   const hasListPermission = checkPermission(permissions, "USER", "list_users");
+  const hasCreatePermission = checkPermission(permissions, "USER", "create_user");
+  const hasSyncPermission = checkPermission(permissions, "USER", "sync_users");
 
   const usersQuery = useUsers({
     q: debouncedSearch || undefined,
@@ -55,7 +57,7 @@ const ListUsers: React.FC = () => {
   const syncUsersMutation = useSyncUsers({
     showToast: true,
     onSuccess: () => {
-      refetch(); 
+      refetch();
     },
   });
 
@@ -170,7 +172,7 @@ const ListUsers: React.FC = () => {
       {showWarning && (
         <PermissionWarningBanner message="You do not have sufficient permissions to view this page!" />
       )}
-      
+
       {!showWarning && (
         <>
           <HeaderInformation
@@ -179,129 +181,134 @@ const ListUsers: React.FC = () => {
             ]}
             title="User Management"
             description="Manage users and their role assignments"
-        action={
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreateUser}
-              style={{ background: colors.primary, borderColor: colors.textPrimary }}
-            >
-              Add User
-            </Button>
-            <Button
-              type="primary"
-              icon={<ReloadOutlined />}
-              onClick={handleSyncUsers}
-              loading={syncUsersMutation.isPending}
-              style={{ background: colors.primary, borderColor: colors.textPrimary }}
-            >
-              Sync Users
-            </Button>
-          </div>
-        }
-      />
-      
-      <FilterContainer>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, width: '100%' }}>
-          <InputFilter
-            label="Quick search"
-            value={searchQuery}
-            onChange={(value) => {
-              setSearchQuery(value);
-              if (value === "") {
-                setPage(1);
-              }
+            icon={<UnorderedListOutlined />}
+            action={
+              <div style={{ display: 'flex', gap: 8 }}>
+                {hasCreatePermission && (
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={handleCreateUser}
+                    style={{ background: colors.primary, borderColor: colors.textPrimary }}
+                  >
+                    Add User
+                  </Button>
+                )}
+                {hasSyncPermission && (
+                  <Button
+                    type="primary"
+                    icon={<ReloadOutlined />}
+                    onClick={handleSyncUsers}
+                    loading={syncUsersMutation.isPending}
+                    style={{ background: colors.primary, borderColor: colors.textPrimary }}
+                  >
+                    Sync Users
+                  </Button>
+                )}
+              </div>
+            }
+          />
+
+          <FilterContainer>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, width: '100%' }}>
+              <InputFilter
+                label="Quick search"
+                value={searchQuery}
+                onChange={(value) => {
+                  setSearchQuery(value);
+                  if (value === "") {
+                    setPage(1);
+                  }
+                }}
+                placeholder="Search by user name or email"
+                width={300}
+                onPressEnter={() => {
+                  setPage(1);
+                }}
+              />
+            </div>
+          </FilterContainer>
+
+
+          <Table
+            columns={columns}
+            dataSource={users}
+            rowKey="id"
+            loading={isLoading}
+            pagination={false}
+            style={{
+              flex: 1,
+              minHeight: 0,
+              border: `1px solid ${colors.tableBorder}`,
+              borderRadius: 0,
+              overflow: "auto",
+              fontSize: "13px",
+              backgroundColor: colors.white,
             }}
-            placeholder="Search by user name or email"
-            width={300}
-            onPressEnter={() => {
-              setPage(1);
+            scroll={{ x: "max-content" }}
+            tableLayout="auto"
+          />
+
+          <Pagination
+            align="start"
+            current={page}
+            pageSize={pageSize}
+            total={total}
+            onChange={(p) => setPage(p)}
+            onShowSizeChange={(_, size) => setPageSize(size)}
+            showSizeChanger
+            showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
+            style={{
+              backgroundColor: colors.white,
+              padding: "16px",
+              borderRadius: 0,
+              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
             }}
           />
-        </div>
-      </FilterContainer>
 
+          <CreateUserModal
+            open={createModalOpen}
+            onCancel={() => setCreateModalOpen(false)}
+            onSuccess={() => {
+              refetch();
+            }}
+          />
 
-      <Table
-        columns={columns}
-        dataSource={users}
-        rowKey="id"
-        loading={isLoading}
-        pagination={false}
-        style={{
-          flex: 1,
-          minHeight: 0,
-          border: `1px solid ${colors.tableBorder}`,
-          borderRadius: 0,
-          overflow: "auto",
-          fontSize: "13px",
-          backgroundColor: colors.white,
-        }}
-        scroll={{ x: "max-content" }}
-        tableLayout="auto"
-      />
+          {isAssignModalVisible && (
+            <AssignRolesModal
+              visible={isAssignModalVisible}
+              onCancel={() => {
+                setIsAssignModalVisible(false);
+                setSelectedUser(null);
+              }}
+              user={selectedUser}
+              onSuccess={handleAssignSuccess}
+            />
+          )}
 
-      <Pagination
-        align="start"
-        current={page}
-        pageSize={pageSize}
-        total={total}
-        onChange={(p) => setPage(p)}
-        onShowSizeChange={(_, size) => setPageSize(size)}
-        showSizeChanger
-        showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
-        style={{ 
-          backgroundColor: colors.white, 
-          padding: "16px", 
-          borderRadius: 0,
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-        }}
-      />
+          {isRemoveModalVisible && (
+            <RemoveRolesModal
+              visible={isRemoveModalVisible}
+              onCancel={() => {
+                setIsRemoveModalVisible(false);
+                setSelectedUser(null);
+              }}
+              user={selectedUser}
+              onSuccess={handleRemoveSuccess}
+            />
+          )}
 
-      <CreateUserModal
-        open={createModalOpen}
-        onCancel={() => setCreateModalOpen(false)}
-        onSuccess={() => {
-          refetch();
-        }}
-      />
-
-      {isAssignModalVisible && (
-        <AssignRolesModal
-          visible={isAssignModalVisible}
-          onCancel={() => {
-            setIsAssignModalVisible(false);
-            setSelectedUser(null);
-          }}
-          user={selectedUser}
-          onSuccess={handleAssignSuccess}
-        />
-      )}
-
-      {isRemoveModalVisible && (
-        <RemoveRolesModal
-          visible={isRemoveModalVisible}
-          onCancel={() => {
-            setIsRemoveModalVisible(false);
-            setSelectedUser(null);
-          }}
-          user={selectedUser}
-          onSuccess={handleRemoveSuccess}
-        />
-      )}
-
-      {isUpdateModalVisible && (
-        <UpdateRolesModal
-          visible={isUpdateModalVisible}
-          onCancel={() => {
-            setIsUpdateModalVisible(false);
-            setSelectedUser(null);
-          }}
-          user={selectedUser}
-          onSuccess={handleUpdateSuccess}
-        />
-      )}
+          {isUpdateModalVisible && (
+            <UpdateRolesModal
+              visible={isUpdateModalVisible}
+              onCancel={() => {
+                setIsUpdateModalVisible(false);
+                setSelectedUser(null);
+              }}
+              user={selectedUser}
+              onSuccess={handleUpdateSuccess}
+            />
+          )}
         </>
       )}
     </MainContainer>

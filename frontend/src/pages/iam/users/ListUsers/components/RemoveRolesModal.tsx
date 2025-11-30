@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal, Table, Button, message, Spin, Checkbox, Space, Typography } from "antd";
 import { useGetUserRoles } from "@/hooks/queries/user/useGetUserRoles";
 import { useRemoveRoles } from "@/hooks/mutations/user/useRemoveRoles";
-import type { User } from "@/api/user.api";
+import type { User } from "@/types/user.types";
 
 const { Text } = Typography;
 

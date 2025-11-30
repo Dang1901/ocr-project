@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo } from "react";
 import { Modal, Form, Input, InputNumber, Switch, Select } from "antd";
 import { useUpdateRole } from "@/hooks/mutations/role/useUpdateRole";
-import type { Role, RoleUpdatePayload } from "@/api/role.api";
+import type { Role, RoleUpdatePayload } from "@/types/role.types";
 import { useDepartments } from "@/hooks/queries/department/useDepartments";
 import { usePagination } from "@/hooks/common/usePagination";
-import type { Department } from "@/api/department.api";
+import type { Department } from "@/types/department.types";
 
 interface EditRoleModalProps {
   open: boolean;

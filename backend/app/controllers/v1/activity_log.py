@@ -3,10 +3,11 @@ from fastapi.openapi.models import Response
 from sqlalchemy import bindparam
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.authentication.dependencies import require_token
+from app.authentication.dependencies import require_session
 from app.models.activity_log import ActivityLog
+from app.models.user import User
 
-router = APIRouter(dependencies=[Depends(require_token)])
+router = APIRouter(dependencies=[Depends(require_session)])
 
 def sanitize_like(val: str) -> str:
     val = val.replace("\\", "\\\\")
@@ -21,7 +22,7 @@ def get_activity_log_entries(
 ):
     """List activity log entries"""
     user_id = request.session.get("user_id")
-    if not user_id:
+    if not  user_id:
         return {"error": "User not authenticated"}
 
     user_id = request.query_params.get("user_id")
@@ -70,22 +71,48 @@ def get_activity_log_entries(
         pattern = f"%{sanitize_like(path)}%"
         query = query.filter(ActivityLog.path.like(bindparam("p"), escape="\\")).params(p=pattern)
 
+    # Order by created_at descending to show newest first
+    query = query.order_by(ActivityLog.created_at.desc())
+
     total = query.count()
 
     query = query.offset(size * page).limit(size)
     result: list[ActivityLog] = query.all()
 
-    return {
-        "total": total,
-        "count": len(result),
-        "data": [{
+    # Map user_id to user information without modifying the main query logic
+    user_ids = [log.user_id for log in result if log.user_id]
+    users_dict = {}
+    if user_ids:
+        users = db.query(User).filter(User.id.in_(user_ids)).all()
+        users_dict = {user.id: user for user in users}
+
+    # Build response data with user information
+    data = []
+    for log in result:
+        user_info = None
+        if log.user_id and log.user_id in users_dict:
+            user = users_dict[log.user_id]
+            user_info = {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "fullname": user.fullname,
+            }
+        
+        data.append({
             "id": log.id,
             "user_id": log.user_id,
+            "user": user_info,
             "method": log.method,
             "response_status": log.response_status,
             "path": log.path,
             "name": log.name,
             "created_at": log.created_at,
             "deleted_at": log.deleted_at,
-        } for log in result],
+        })
+
+    return {
+        "total": total,
+        "count": len(result),
+        "data": data,
     }
